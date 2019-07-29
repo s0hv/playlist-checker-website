@@ -1,23 +1,73 @@
-const { getVideos, videoCount } = require('../helpers/db');
+const { getVideos, videoCount, editRow } = require('../helpers/db');
+
+
+function parseWhere(whereArgs) {
+    const whereList = [];
+
+    if (whereArgs instanceof Object) {
+        Object.keys(whereArgs).forEach(function (column) {
+            if (typeof whereArgs[column] !== 'string') return;
+
+            const data = whereArgs[column].split(' ');
+            let comp = data[0].toUpperCase();
+            if (comp === 'NOT') {
+                comp = `${comp} ${data.shift()}`;
+            }
+
+            whereList.push({
+                comparator: comp,
+                value: data.slice(1).join(' '),
+                column: column
+            })
+        });
+    }
+
+    return whereList
+}
 
 module.exports = function (app) {
-    app.get('/videos', (req, res) => {
+    /*
+    Whereclause needs to have the comparison operator and value separated by space
+    eg `= b` or `LIKE abc`
+     */
+    app.get('/', (req, res) => {
         let limit = req.query.limit || 500;
         let offset = parseInt(req.query.offset) || 0;
         let sort = (req.query.sort || 'id ASC').split(' ');
 
         let sortCol = sort[0];
-        getVideos(sortCol, sort[1], limit, offset)
+        const whereList = parseWhere(req.query.where);
+
+        getVideos(sortCol, sort[1], limit, offset, whereList)
             .then(rows => res.json(rows))
-            .catch(err => res.status(500).json({error: 'Internal server error'}));
+            .catch(err => {
+                console.log(err);
+                res.status(500).json({error: 'Internal server error'})
+            });
     });
 
-    app.get('/videos/count', (req, res) => {
-        videoCount()
+    app.get('/count', (req, res) => {
+        videoCount(parseWhere(req.query.where))
             .then(rows => res.json(rows.rows[0]))
             .catch(err => {
                 console.log(err);
-                res.status(500).send('Internal server error');
+                res.status(500).json({error: 'Internal server error'});
             })
     });
+
+    app.patch('/', (req, res) => {
+        const body = req.body;
+        const videoId = body.id;
+        if (videoId === undefined) return res.json({error: 'No video id given'});
+
+        const columns = body.columns;
+        if (columns.length === 0) return res.json({warning: 'No editable columns given'});
+
+        editRow(videoId, columns)
+            .then(rows => res.json({rowCount: rows.rowCount}))
+            .catch(err => {
+                console.log(err);
+                res.status(500).json({error: 'Internal server error'})
+            });
+    })
 };

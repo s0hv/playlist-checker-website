@@ -1,6 +1,6 @@
 import SignIn from './pages/SignIn';
 import VideoGrid from './pages/VideoGrid';
-import React, {Component} from "react";
+import React from "react";
 import {BrowserRouter as Router, Redirect, Route} from "react-router-dom";
 import {isAuthenticated} from './authenticate';
 
@@ -40,25 +40,6 @@ function PrivateRoute({ component: Component, ...rest }) {
       }
     />
   );
-}
-
-class Login extends Component {
-  state = { redirectToReferrer: false };
-
-
-  render() {
-    let { from } = this.props.location.state || { from: { pathname: "/" } };
-    let { redirectToReferrer } = this.state;
-
-    if (redirectToReferrer) return <Redirect to={from} />;
-
-    return (
-      <div>
-        <p>You must log in to view the page at {from.pathname}</p>
-        <button onClick={this.login}>Log in</button>
-      </div>
-    );
-  }
 }
 
 export default AuthExample;

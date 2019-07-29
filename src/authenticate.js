@@ -12,11 +12,14 @@ export function getToken() {
     return cookies.get('token');
 }
 
-export function withToken(url, token) {
+export function withToken(url, token, body, headers, method='GET') {
     return fetch(url, {
         headers: {
             Authorization: `Bearer ${token}`,
-        }
+            ...headers
+        },
+        method: method,
+        body: JSON.stringify(body)
     })
         .then(resp => {
             if (resp.status === 401 || resp.status === 403) {
@@ -25,6 +28,7 @@ export function withToken(url, token) {
             } else {
                 return resp.json()
             }
-        });
+        })
+        .catch(err => { return {status: 500, error: 'Internal server error'} });
 }
 

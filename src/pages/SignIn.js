@@ -88,7 +88,7 @@ class SignIn extends React.PureComponent {
             }
           })
 
-          .catch(err => this.setState({error: err.message, ... data}))
+          .catch(err => this.setState({error: err.message, ...data}))
     }
   }
 

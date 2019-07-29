@@ -3,71 +3,111 @@ import Paper from '@material-ui/core/Paper'
 import EditIcon from '@material-ui/icons/Edit';
 import SaveIcon from '@material-ui/icons/Save';
 import CancelIcon from '@material-ui/icons/Cancel';
-import Checkbox from '@material-ui/core/Checkbox';
 import withRoot from './../withRoot';
 import {getToken, withToken} from './../authenticate';
 import {Redirect} from "react-router-dom";
 import {API} from './../config/config';
-
+import {
+    dateColumnFilters,
+    DateEditor,
+    dateFilterIcons,
+    dateFilterMessages
+} from '../components/date'
+import {
+    boolFilterIcons,
+    boolFilterMessages,
+    boolFilters,
+    BoolTypeProvider
+} from '../components/boolean'
+import {ThumbnailTypeProvider} from '../components/thumbnail'
 
 import {
     CustomPaging,
     DataTypeProvider,
     EditingState,
+    FilteringState,
+    IntegratedFiltering,
     PagingState,
     RowDetailState,
     SortingState,
 } from '@devexpress/dx-react-grid';
 import {
+    ColumnChooser,
     Grid,
     PagingPanel,
     Table,
+    TableColumnResizing,
+    TableColumnVisibility,
     TableEditColumn,
     TableEditRow,
+    TableFilterRow,
     TableHeaderRow,
     TableRowDetail,
+    Toolbar,
 } from '@devexpress/dx-react-grid-material-ui';
-import CircularProgress from '@material-ui/core/CircularProgress';
+import {Loading} from './../styles/loading';
 import {IconButton} from "@material-ui/core";
 
 
+// Define constants that will be used in this file
+
+// We define the function that returns null here instead of in render
+const nullFunc = () => null;
+
+// Combine all custom filter messages and icons into single dicts
+const filterMessages = {...dateFilterMessages, ...boolFilterMessages};
+const filterIcons = {...boolFilterIcons, ...dateFilterIcons};
+
+// Base api url
 const URL = `${API}/videos`;
 
+// Filters used for integer columns
+const IntegerFilters = ['equal', 'greaterThan', 'greaterThanOrEqual', 'lessThan', 'lessThanOrEqual', 'notEqual'];
+
+// Filters used for array columns
+const ArrayFilters = ['equal', 'notEqual'];
+
+// Returns function for the specified filter type.
+// The functions take the filterable value as their parameter and return
+//a string that can be used in the where query argument
+const FILTERS = {
+    contains: (value) => { return `ILIKE %${value}%` },
+    notContains: (value) => { return `NOT ILIKE %${value}%` },
+    startsWith: (value) => { return `ILIKE ${value}%` },
+    endsWith: (value) => { return `ILIKE %${value}` },
+    equal: (value) => { return `= ${value}`},
+    notEqual: (value) => { return `!= ${value}` },
+    greaterThan: (value) => { return `> ${value}` },
+    greaterThanOrEqual: (value) => { return `>= ${value}` },
+    lessThan: (value) => { return `< ${value}` },
+    lessThanOrEqual: (value) => { return `<= ${value}` },
+    true: () => { return `= True`},
+    false: () => { return `= False` },
+    at: (value) => { return `= ${value}`},
+    before: (value) => { return `< ${value}`},
+    after: (value) => { return `> ${value}`},
+};
+
+// Used for returning custom filter icons
+const FilterIcon = ({ type, ...restProps }) => {
+    const Icon = filterIcons[type];
+    if (Icon !== undefined) return <Icon {...restProps}/>;
+    return <TableFilterRow.Icon type={type} {...restProps}/>
+};
+
+// Used to hide filter line edit when it's disabled
+const FilterCellRender = ({ filteringEnabled, column, ...restProps }) => {
+    // We don't want to render disabled filters
+    if (!filteringEnabled) return <th/>;
+    return <TableFilterRow.Cell filteringEnabled={filteringEnabled} {...restProps}/>
+};
+
+// Element that
 const RowDetail = ({ row }) => (
   <pre style={{ fontSize: 14 }}>
     {row.description}
   </pre>
 );
-
-function dateFormatter({ value }){
-    if (value) {
-        return value.replace(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).+/, '$3.$2.$1 $4:$5:$6');
-    } else {
-        return '';
-    }
-}
-
-const DateTypeProvider = props => (
-  <DataTypeProvider
-      formatterComponent={dateFormatter}
-      {...props}
-  />
-);
-
-const BoolFormatter = ({ value }) => (
-     <Checkbox
-        checked={Boolean(value)}
-        disabled={true}
-    />
-);
-
-const BoolTypeProvider = props => (
-    <DataTypeProvider
-        formatterComponent={BoolFormatter}
-        {...props}
-    />
-);
-
 
 const EditButton = ({ onExecute }) => (
     <IconButton onClick={onExecute} title="Edit row">
@@ -118,46 +158,130 @@ class VideoGrid extends React.PureComponent {
                 {name: 'video_id', title: 'Video id'},
                 {name: 'title', title: 'Title'},
                 {name: 'published_at', title: 'Publish date'},
+                {name: 'tag', title: 'Tags'},
+                {name: 'thumbnail', title: 'Thumbnail'},
                 {name: 'deleted', title: 'Is deleted'},
                 {name: 'deleted_at', title: 'Deletion date'},
-                {name: 'thumbnail', title: 'Thumbnail'},
                 {name: 'alternative', title: 'Alternative'},
+                {name: 'name', title: 'Playlist'},
+                {name: 'playlist_id', title: 'Playlist id'},
+                {name: 'download_type', title: 'Download format'},
+                {name: 'downloaded_format', title: 'Format used'}
             ],
-            dateColumns: [
-                'published_at',
-                'deleted_at',
-            ],
+            thumbnailColumns: ['thumbnail'],
+            integerColumns: ['id'],
+            arrayColumns: ['tag', 'playlist_id', 'name'],  // Columns represented as array in backend
             boolColumns: ['deleted'],
-            tableColumnExtensions: [
+            dateColumns: ['published_at', 'deleted_at'],
+            dateColumnFilters: dateColumnFilters,
+            columnExtensions: [
+                {columnName: 'title', wordWrapEnabled: true},
+                {columnName: 'alternative', wordWrapEnabled: true},
+                {columnName: 'tag', wordWrapEnabled: true},
+                {columnName: 'name', wordWrapEnabled: true},
+                {columnName: 'playlist_id', wordWrapEnabled: true},
+            ],
+
+            filterableColumns: [
+                {columnName: 'id', filteringEnabled: true},
+                {columnName: 'video_id', filteringEnabled: true},
+                {columnName: 'title', filteringEnabled: true},
+                {columnName: 'published_at', filteringEnabled: true},
+                {columnName: 'deleted_at', filteringEnabled: true},
+                {columnName: 'deleted', filteringEnabled: true},
+                {columnName: 'tag', filteringEnabled: true},
+                {columnName: 'alternative', filteringEnabled: true},
+                {columnName: 'name', filteringEnabled: true},
+                {columnName: 'playlist_id', filteringEnabled: true},
+            ],
+
+            // These are needed for non integrated filtering to succeed on custom components
+            filteringColumnExtensions: [
+                {
+                    columnName: 'deleted',
+                    predicate: () => true  // Needed for placeholder filter
+                },
+                {
+                    columnName: 'tag',
+                    predicate: () => true  // Needed for placeholder filter
+                },
+                {
+                    columnName: 'deleted_at',
+                    predicate: () => true  // Needed for placeholder filter
+                },
+                {
+                    columnName: 'published_at',
+                    predicate: () => true  // Needed for placeholder filter
+                },
+                {
+                    columnName: 'name',
+                    predicate: () => true  // Needed for placeholder filter
+                },
+                {
+                    columnName: 'playlist_id',
+                    predicate: () => true  // Needed for placeholder filter
+                },
+              ],
+
+            columnWidths: [
                 {columnName: 'id', align: 'right', width: 100},
                 {columnName: 'video_id', width: 150},
-                {columnName: 'title', width: 700},
+                {columnName: 'title', width: 500},
+                {columnName: 'published_at', width: 250},
                 {columnName: 'deleted', width: 100},
+                {columnName: 'deleted_at', width: 250},
+                {columnName: 'tag', width: 250},
+                {columnName: 'thumbnail', width: 300},
+                {columnName: 'alternative', width: 300},
+                {columnName: 'name', width: 300},
+                {columnName: 'playlist_id', width: 300},
+                {columnName: 'download_type', width: 300},
+                {columnName: 'downloaded_format', width: 300},
             ],
 
             editableColumnExtensions: [
                 {columnName: 'alternative', editingEnabled: true},
+                {columnName: 'download_type', editingEnabled: true},
             ],
+
+            sortingStateColumnExtensions: [
+                { columnName: 'thumbnail', sortingEnabled: false },
+                { columnName: 'tag', sortingEnabled: false },
+                { columnName: 'name', sortingEnabled: false },
+                { columnName: 'playlist_id', sortingEnabled: false },
+            ],
+
+            hiddenColumnNames: ['id', 'video_id', 'tag'],
+
             rows: [],
+            filters: [{columnName: 'deleted', value:'e'}],
             editingRowIds: [],
             rowChanges: {},
             sorting: [{ columnName: 'id', direction: 'asc'}],
             totalCount: 0,
             pageSize: 10,
-            pageSizes: [10, 25, 50, 100, 250, 500],
+            pageSizes: [10, 25, 50, 100],
             currentPage: 0,
             loading: true,
             redirectToLogin: false,
         };
 
-
-
         this.changeSorting = this.changeSorting.bind(this);
         this.changeCurrentPage = this.changeCurrentPage.bind(this);
         this.changePageSize = this.changePageSize.bind(this);
         this.commitChanges = this.commitChanges.bind(this);
+        this.changeFilters = this.changeFilters.bind(this);
+
         this.changeEditingRowIds = editingRowIds => this.setState({ editingRowIds });
         this.changeRowChanges = rowChanges => this.setState({ rowChanges });
+
+        this.changeColumnWidths = (columnWidths) => {
+            this.setState({ columnWidths });
+        };
+
+        this.changeHiddenColumnNames = (columnNames) => {
+            this.setState({hiddenColumnNames: columnNames});
+        };
 
     }
 
@@ -167,6 +291,28 @@ class VideoGrid extends React.PureComponent {
 
     componentDidUpdate() {
         this.loadData();
+    }
+
+    componentWillUnmount() {
+        clearTimeout(this.filterTimeout);
+        this.filterTimeout = undefined
+    }
+
+    changeFilters(filters) {
+        this.setState({
+            loading: true,
+        });
+
+        // Clear old timeout and create new timeout to do api filter request
+        // What this accomplishes is delays the api request until the search query
+        // hasn't changed for the specified time
+        this.setState({filters});
+        clearTimeout(this.filterTimeout);
+        this.filterTimeout =
+            setTimeout(function () {
+                this.filterTimeout = undefined;
+                this.loadData();
+            }.bind(this), 500);
     }
 
     changeSorting(sorting) {
@@ -185,6 +331,27 @@ class VideoGrid extends React.PureComponent {
 
     commitChanges({ changed }) {
         let { rows } = this.state;
+        console.log(changed);
+
+        for (let key in changed) {
+            if (!changed.hasOwnProperty(key)) continue;
+
+            if (changed[key] === undefined) return;
+
+            delete changed[key]['published_at'];
+            delete changed[key]['deleted_at'];
+            const val = [];
+
+            for (let column in changed[key]) {
+                if (!changed[key].hasOwnProperty(column)) continue;
+
+                val.push({column: column, value: changed[key][column]})
+            }
+            withToken(URL, getToken(), {id: key, columns: val}, {'Content-Type': 'application/json'}, 'PATCH')
+                .then(json => console.log(json));
+
+        }
+
         if (changed) {
             rows = rows.map(row => (changed[row.id] ? { ...row, ...changed[row.id] } : row));
         }
@@ -204,32 +371,65 @@ class VideoGrid extends React.PureComponent {
         });
     }
 
-    queryString() {
+    whereString() {
+        const { filters } = this.state;
+        let whereString = '';
+
+        filters.forEach(function ({ columnName, value, operation }) {
+            // Ignore if operation not found
+            console.log(columnName, value, operation);
+            if (!FILTERS[operation]) return;
+
+            let val = encodeURIComponent(FILTERS[operation](value));
+            if (whereString !== '') {
+                whereString += `&where[${columnName}]=${val}`;
+            } else {
+                whereString = `where[${columnName}]=${val}`;
+            }
+        });
+
+        console.log(whereString);
+
+        return whereString;
+    }
+
+    queryString(whereString) {
         const { sorting, pageSize, currentPage } = this.state;
         let queryString = `${URL}?limit=${pageSize}&offset=${currentPage*pageSize}`;
-
         const columnSorting = sorting[0];
         if (columnSorting) {
             const sortingDirection = columnSorting.direction === 'desc' ? ' desc' : ' asc';
-            queryString = `${queryString}&sort=${columnSorting.columnName}${sortingDirection}`;
+            queryString = `${queryString}&sort=${columnSorting.columnName}${encodeURIComponent(sortingDirection)}`;
         }
+
+        if (!whereString) whereString = this.whereString();
+        if (whereString !== '') queryString = `${queryString}&${whereString}`;
 
         return queryString;
     }
 
-
-
     loadData() {
-        const queryString = this.queryString();
+        // If filter change has been done recently don't update data
+        if (this.filterTimeout !== undefined) {
+            return;
+        }
+        const whereString = this.whereString();
+        const queryString = this.queryString(whereString);
         if (queryString === this.lastQuery) {
-            this.setState({loading: false});
+            if (this.filterTimeout === undefined) {
+                this.setState({loading: false});
+            }
             return;
         }
 
         let totalCount = this.state.totalCount;
         const token = getToken();
-        if (totalCount <= 0) {
-            withToken(`${URL}/count`, token)
+        if (totalCount <= 0 || this.lastWhere !== whereString) {
+
+            this.lastWhere = whereString;
+
+            const api = `${URL}/count${whereString ? '?' + whereString : ''}`;
+            withToken(api, token)
                 .then(json => {
                     if (json.error === 'Unauthorized') {
                         this.setState({redirectToLogin: true})
@@ -266,12 +466,21 @@ class VideoGrid extends React.PureComponent {
     const {
         rows,
         columns,
-        dateColumns,
+        thumbnailColumns,
+        arrayColumns,
+        integerColumns,
         boolColumns,
+        dateColumns,
         rowChanges,
         editingRowIds,
+        columnExtensions,
         editableColumnExtensions,
-        tableColumnExtensions,
+        sortingStateColumnExtensions,
+        filteringColumnExtensions,
+        filterableColumns,
+        filters,
+        hiddenColumnNames,
+        columnWidths,
         sorting,
         pageSize,
         pageSizes,
@@ -290,15 +499,32 @@ class VideoGrid extends React.PureComponent {
               columns={columns}
               getRowId={getRowId}
             >
-                <DateTypeProvider
-                    for={dateColumns}
-                />
                 <BoolTypeProvider
                     for={boolColumns}
+                    editorComponent={nullFunc}
+                    availableFilterOperations={boolFilters}
                 />
+                <ThumbnailTypeProvider
+                    for={thumbnailColumns}
+                />
+                <DataTypeProvider
+                    for={dateColumns}
+                    editorComponent={DateEditor}
+                    availableFilterOperations={dateColumnFilters}
+                />
+                <DataTypeProvider
+                    for={integerColumns}
+                    availableFilterOperations={IntegerFilters}
+                />
+                <DataTypeProvider
+                    for={arrayColumns}
+                    availableFilterOperations={ArrayFilters}
+                />
+
                 <SortingState
                 sorting={sorting}
                 onSortingChange={this.changeSorting}
+                columnExtensions={sortingStateColumnExtensions}
                 />
                 <PagingState
                     currentPage={currentPage}
@@ -318,10 +544,33 @@ class VideoGrid extends React.PureComponent {
                 <CustomPaging
                     totalCount={totalCount}
                 />
-                <Table
-                    columnExtensions={tableColumnExtensions}
+                <FilteringState
+                    filters={filters}
+                    onFiltersChange={this.changeFilters}
+                    columnFilteringEnabled={false}
+                    columnExtensions={filterableColumns}
+                />
+                <IntegratedFiltering columnExtensions={filteringColumnExtensions}/>
+                <Table columnExtensions={columnExtensions} />
+
+                <TableColumnResizing
+                    columnWidths={columnWidths}
+                    minColumnWidth={100}
+                    onColumnWidthsChange={this.changeColumnWidths}
                 />
                 <TableHeaderRow showSortingControls />
+                <TableColumnVisibility
+                    hiddenColumnNames={hiddenColumnNames}
+                    onHiddenColumnNamesChange={this.changeHiddenColumnNames}
+                />
+                <Toolbar />
+                <ColumnChooser/>
+                <TableFilterRow
+                    showFilterSelector
+                    iconComponent={FilterIcon}
+                    messages={filterMessages}
+                    cellComponent={FilterCellRender}
+                />
                 <TableEditRow
                     cellComponent={EditCell}
                 />
@@ -330,16 +579,15 @@ class VideoGrid extends React.PureComponent {
                     showEditCommand
                     commandComponent={Command}
                 />
-                <PagingPanel
-                    pageSizes={pageSizes}
-                />
-                <RowDetailState
-                />
+                <RowDetailState />
                 <TableRowDetail
                     contentComponent={RowDetail}
                 />
+                <PagingPanel
+                    pageSizes={pageSizes}
+                />
             </Grid>
-            {loading && <CircularProgress/>}
+            {loading && <Loading />}
         </Paper>
     );
   }

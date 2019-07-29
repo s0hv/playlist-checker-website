@@ -13,19 +13,231 @@ const pool = new Pool({
     connectionTimeoutMillis: 2000,
 });
 
-function getVideos(sortCol, sortDirection, limit, offset) {
-    // We don't want to sort by description since it's not indexed
-    sortCol = sortCol.toLowerCase() === 'description' ? 'id' : sortCol;
+// Set consisting of all normal equality comparison operators
+const EQUAL_OPS = new Set(['=', '>', '<', '<=', '>=', '!=']);
+const STRING_OPS = new Set(['LIKE', 'ILIKE', '=']);
+const EQUAL = new Set(['=']);
+
+const COLUMN_COMPARATORS = {
+    id: EQUAL_OPS,
+    video_id: EQUAL,
+    title: STRING_OPS,
+    description: STRING_OPS,
+    published_at: EQUAL_OPS,
+    deleted: EQUAL,
+    deleted_at: EQUAL_OPS,
+    tag: EQUAL,
+    name: EQUAL,
+    playlist_id: EQUAL,
+};
+
+
+const TABLE_COLUMNS = {
+    videos: [
+        'id',
+        'video_id',
+        'title',
+        'description',
+        'published_at',
+        'deleted',
+        'deleted_at',
+        'site',
+        'alternative',
+        'thumbnail',
+        'download_type',
+        'downloaded_filename',
+        'downloaded_format',
+    ],
+
+    tags: ['tag'],
+
+    playlists: ['name', 'playlist_id'],
+};
+
+// Columns that need to be in the having clause when filtered
+const HAVING_COLUMNS = ['tag', 'name', 'playlist_id'];
+
+// Flips TABLE_COLUMNS so you can search for table name based on column
+const COLUMN_TABLES = {};
+Object.keys(TABLE_COLUMNS).forEach(table => {
+    TABLE_COLUMNS[table].forEach(column => COLUMN_TABLES[column] = table);
+});
+
+// Contains all columns that can be edited using this api
+const EDITABLE_COLUMNS = ['alternative', 'download_type'];
+
+
+// Comparison templates
+const normal_comp = ( {comp, param} ) => `${comp} $${param} `;
+const date_comp = ( {comp, param} ) => `${comp} $${param}::date `;
+const arr_comp = ( {comp, table } ) => `%L${comp}ANY(ARRAY_AGG(${table}.%I))`;
+
+// Templates for creating where clauses from columns
+const COLUMN_TEMPLATES = {
+    id: normal_comp,
+    video_id: normal_comp,
+    title: normal_comp,
+    description: normal_comp,
+    published_at: date_comp,
+    deleted: normal_comp,
+    deleted_at: date_comp,
+    tag: normal_comp,
+    playlist_id: normal_comp,
+    name: normal_comp,
+};
+
+const prepare_date = ( col ) => `date_trunc('day', ${col})`;
+const PREPARE_COLUMN = {
+    published_at: prepare_date,
+    deleted_at: prepare_date,
+};
+
+// Templates for creating having clauses from columns
+const HAVING_TEMPLATES = {
+    tag: arr_comp,
+    playlist_id: arr_comp,
+    name: arr_comp,
+};
+
+function checkColumnName(column) {
+    return COLUMN_TABLES[column] !== undefined;
+}
+
+function parseWhere(whereInfo, arglen=0, useHaving=true) {
+    if (!whereInfo) return {where: [], args: []};
+    let i = arglen+1;
+    let where = [];
+    let having = [];
+    const whereCols = [];
+    const havingCols = [];
+    const args = [];
+
+    whereInfo.forEach(function ({ column, comparator, value }) {
+        if (!COLUMN_COMPARATORS[column]) return;
+        if (!COLUMN_COMPARATORS[column].has(comparator)) return;
+
+        // Check if column should be in having clause or where clause
+        if (useHaving && HAVING_COLUMNS.indexOf(column) >= 0) {
+            // Format string ready for comparison using an aggregator
+            let s = HAVING_TEMPLATES[column]({comp: comparator, table: COLUMN_TABLES[column]});
+            havingCols.push(value, column);
+            having.push(s);
+        } else {
+            args.push(value);
+            // Format string ready for comparison
+            let s = COLUMN_TEMPLATES[column]({comp: comparator, param: i});
+
+            const prepare = PREPARE_COLUMN[column];
+            if (prepare) {
+                const c = `${COLUMN_TABLES[column]}.%I`;
+                s = `${prepare(c)} ${s}`;
+            } else {
+                s = `${COLUMN_TABLES[column]}.%I ${s}`;
+            }
+
+            whereCols.push(column);
+            where.push(s);
+        }
+
+        i++;
+    });
+
+    // Construct whereclause
+    let whereClause = '';
+    if (whereCols.length > 0) {
+        whereClause = 'WHERE ' + format(where.join('AND '), ...whereCols);
+    }
+
+    // Cosntruct having clause
+    let havingClause = '';
+    if (havingCols.length > 0) {
+        havingClause = 'HAVING ' + format(having.join(' AND '), ...havingCols)
+    }
+
+    return {where: whereClause, args: args, having: havingClause, cols: [...whereCols, ...havingCols]};
+}
+
+function getVideos(sortCol, sortDirection, limit, offset, whereInfo) {
+    if (!checkColumnName(sortCol)) {
+        return new Promise((resolve) => resolve({error: 'Invalid sort column given'}))
+    }
+
     limit = Math.min(limit, 500);
     let isAsc = (sortDirection || 'ASC').toUpperCase() === 'ASC';
+    const args = [limit, offset];
+    console.log(whereInfo);
 
-    const sql = format(`SELECT * FROM videos ORDER BY %I ${isAsc ? 'ASC' : 'DESC'} LIMIT $1 OFFSET $2`, sortCol);
-    console.log(sql);
-    return pool.query(sql, [limit, offset])
+    let res = parseWhere(whereInfo, args.length);
+    console.log(res);
+    const where = res.where;
+    const having = res.having;
+    args.push(...res.args);
+
+    const sql = format(
+        `SELECT videos.*, string_agg(tags.tag, ', ') as tag, 
+              string_agg(DISTINCT playlists.playlist_id, ', ') as playlist_id,
+              string_agg(DISTINCT playlists.name, ', ') as name,
+              to_char(videos.published_at, 'DD.MM.YYYY HH:mm:SS') as published_at, 
+              to_char(videos.deleted_at, 'DD.MM.YYYY HH:mm:SS') as deleted_at 
+              FROM videos LEFT JOIN playlistvideos pv ON pv.video_id=videos.id LEFT JOIN playlists ON pv.playlist_id=playlists.id 
+              LEFT JOIN videotags vt ON vt.video_id=videos.id LEFT JOIN tags ON vt.tag_id=tags.id 
+              ${where} GROUP BY (pv.video_id, vt.video_id, videos.id) ${having} ORDER BY videos.%I ${isAsc ? 'ASC' : 'DESC'} LIMIT $1 OFFSET $2`, sortCol);
+
+
+    console.log(sql, args);
+    return pool.query(sql, args);
 }
 
-function videoCount() {
-    return pool.query('SELECT COUNT(id) FROM videos');
+function videoCount(whereInfo) {
+    const {where, args, cols} = parseWhere(whereInfo, 0, false);
+
+    /*
+     We need to treat count requests with tag as a wherearg differently
+     because we need to join the table in order to check it. We want to
+     omit the join if possible for performance so we do the check here
+      */
+    if (cols.indexOf('tag') >= 0 || cols.indexOf('name') >= 0 || cols.indexOf('playlist_id') >= 0) {
+        return pool.query(`SELECT COUNT(DISTINCT (videos.id))
+        FROM videos
+               LEFT JOIN videotags vt ON vt.video_id = videos.id
+               LEFT JOIN tags ON vt.tag_id = tags.id 
+               LEFT JOIN playlistvideos pv ON videos.id = pv.video_id
+               LEFT JOIN playlists ON pv.playlist_id = playlists.id
+               ${where}`, args);
+
+    } else {
+        return pool.query(`SELECT COUNT(*) FROM videos ${where}`, args);
+    }
 }
 
-module.exports = { getVideos, videoCount };
+function editRow(videoId, keyValues) {
+    const values = [];        // Values of the edited columns
+    const columns = [];       // Names of all of the columns to be edited
+    const columnClause = [];  // Column text to be formatted with columns
+    let i = 1;
+
+    keyValues.forEach(function ({ column, value }) {
+        // Filter away all rows that aren't whitelisted
+        if (EDITABLE_COLUMNS.indexOf(column) < 0) return;
+
+        values.push(value);
+        columns.push(column);
+        columnClause.push(`%I=$${i}`);
+        i++;
+    });
+
+    // Just return if no valid columns were given
+    if (values.length === 0) return {error: 'No valid columns given'};
+
+    // Formatted for a parameterized query
+    let a = columnClause.join(', ');
+
+    // Sanitize column names and add video id to the value list after that
+    const sql = format(`UPDATE videos SET ${a} WHERE id=$${i}`, columns);
+    values.push(videoId);
+    console.log(sql, columns);
+
+    return pool.query(sql, values);
+}
+
+module.exports = { getVideos, videoCount, editRow, TABLE_COLUMNS };

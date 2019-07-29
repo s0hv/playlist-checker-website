@@ -2,11 +2,13 @@ var cors = require("cors");
 const express = require('express');
 const exjwt = require('express-jwt');
 const config = require('./server_config.json');
+var bodyParser = require('body-parser');
 
 const SECRET = config.secret;
 if (!SECRET) throw new Error('No secret provided');
 const app = express();
 
+app.use(bodyParser.json());
 app.use(cors());
 app.use(exjwt({
   secret: SECRET,
@@ -32,7 +34,10 @@ app.use(function (err, req, res, next) {
 
 const port = config.server_port;
 
-require('./routes')(app);
+var videoRouter = express.Router();
+require('./routes')(videoRouter);
+app.use('/videos', videoRouter);
+
 app.listen(port, () => {
   console.log('We are live on ' + port);
 });
