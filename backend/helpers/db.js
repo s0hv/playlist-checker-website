@@ -137,9 +137,9 @@ function parseWhere(whereInfo, arglen=0, useHaving=true) {
 
             whereCols.push(column);
             where.push(s);
+            i++;
         }
 
-        i++;
     });
 
     // Construct whereclause
