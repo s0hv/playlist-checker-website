@@ -161,11 +161,11 @@ class VideoGrid extends React.PureComponent {
                 {name: 'tag', title: 'Tags'},
                 {name: 'thumbnail', title: 'Thumbnail'},
                 {name: 'deleted', title: 'Is deleted'},
-                {name: 'deleted_at', title: 'Deletion date'},
+                {name: 'download_type', title: 'Download format'},
                 {name: 'alternative', title: 'Alternative'},
                 {name: 'name', title: 'Playlist'},
                 {name: 'playlist_id', title: 'Playlist id'},
-                {name: 'download_type', title: 'Download format'},
+                {name: 'deleted_at', title: 'Deletion date'},
                 {name: 'downloaded_format', title: 'Format used'}
             ],
             thumbnailColumns: ['thumbnail'],
