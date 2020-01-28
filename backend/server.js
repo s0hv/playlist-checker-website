@@ -38,6 +38,9 @@ var videoRouter = express.Router();
 require('./routes')(videoRouter);
 app.use('/videos', videoRouter);
 
+const discord = require('./routes/discord');
+discord(app);
+
 app.listen(port, () => {
   console.log('We are live on ' + port);
 });
