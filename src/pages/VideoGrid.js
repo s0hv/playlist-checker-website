@@ -393,6 +393,29 @@ class VideoGrid extends React.PureComponent {
         return whereString;
     }
 
+    selectedColumns() {
+        const { hiddenColumnNames, columns, filters } = this.state;
+        const cols = new Set();
+        console.log(columns, hiddenColumnNames, filters);
+        columns.forEach(({ name }) => {
+            cols.add(name)
+        });
+
+        hiddenColumnNames.forEach( (filter) => {
+            cols.delete(filter);
+        });
+
+        filters.forEach( ({ columnName }) => {
+            cols.add(columnName);
+        });
+
+        cols.add('id');
+        cols.add('video_id');
+        console.log(cols);
+
+        return cols;
+    }
+
     queryString(whereString) {
         const { sorting, pageSize, currentPage } = this.state;
         let queryString = `${URL}?limit=${pageSize}&offset=${currentPage*pageSize}`;
@@ -404,6 +427,10 @@ class VideoGrid extends React.PureComponent {
 
         if (!whereString) whereString = this.whereString();
         if (whereString !== '') queryString = `${queryString}&${whereString}`;
+
+        this.selectedColumns().forEach(col => {
+            queryString = `${queryString}&select=${col}`;
+        });
 
         return queryString;
     }

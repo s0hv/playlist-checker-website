@@ -99,6 +99,23 @@ const HAVING_TEMPLATES = {
     name: arr_comp,
 };
 
+// Columns that can be selected
+const SELECTABLE_COLUMNS = {
+    id: 'videos.id',
+    video_id: 'videos.video_id',
+    title: 'videos.title',
+    published_at: "to_char(videos.published_at, 'DD.MM.YYYY HH24:mm:SS') as published_at",
+    thumbnail: 'videos.thumbnail',
+    deleted: 'videos.deleted',
+    deleted_at: "to_char(videos.deleted_at, 'DD.MM.YYYY HH24:mm:SS') as deleted_at",
+    download_type: 'videos.download_type',
+    downloaded_format: 'videos.downloaded_format',
+    alternative: 'videos.alternative',
+    tag: "string_agg(tags.tag, ', ') as tag",
+    name: "string_agg(DISTINCT playlists.name, ', ') as name",
+    playlist_id: "string_agg(DISTINCT playlists.playlist_id, ', ') as playlist_id"
+};
+
 function checkColumnName(column) {
     return COLUMN_TABLES[column] !== undefined;
 }
@@ -148,7 +165,7 @@ function parseWhere(whereInfo, arglen=0, useHaving=true) {
         whereClause = 'WHERE ' + format(where.join('AND '), ...whereCols);
     }
 
-    // Cosntruct having clause
+    // Construct having clause
     let havingClause = '';
     if (havingCols.length > 0) {
         havingClause = 'HAVING ' + format(having.join(' AND '), ...havingCols)
@@ -157,7 +174,7 @@ function parseWhere(whereInfo, arglen=0, useHaving=true) {
     return {where: whereClause, args: args, having: havingClause, cols: [...whereCols, ...havingCols]};
 }
 
-function getVideos(sortCol, sortDirection, limit, offset, whereInfo) {
+function getVideos(sortCol, sortDirection, limit, offset, whereInfo, selectedColumns) {
     if (!checkColumnName(sortCol)) {
         return new Promise((resolve) => resolve({error: 'Invalid sort column given'}))
     }
@@ -167,21 +184,48 @@ function getVideos(sortCol, sortDirection, limit, offset, whereInfo) {
     const args = [limit, offset];
     console.log(whereInfo);
 
-    let res = parseWhere(whereInfo, args.length);
+    const res = parseWhere(whereInfo, args.length);
     console.log(res);
     const where = res.where;
     const having = res.having;
+    const cols = res.cols;
     args.push(...res.args);
 
+    // Only select the requested columns for decent speedups when it
+    // reduces the amount of joins done
+    const selection = [];
+
+    // Add columns used in whereclause to the columns we need to select
+    selectedColumns.push(...cols);
+    selectedColumns = new Set(selectedColumns);
+    selectedColumns.forEach(col => {
+       if (!(col in SELECTABLE_COLUMNS)) return;
+
+       selection.push(SELECTABLE_COLUMNS[col])
+    });
+    const select = selection.join(', ');
+
+    // Check required joins and grouping based on selected columns
+    const joins = [];
+    const groupings = [];
+    if (selectedColumns.has('playlist_id') || selectedColumns.has('name')) {
+        joins.push('LEFT JOIN playlistvideos pv ON pv.video_id=videos.id LEFT JOIN playlists ON pv.playlist_id=playlists.id');
+        groupings.push('pv.video_id');
+    }
+    if (selectedColumns.has('tag')) {
+        joins.push('LEFT JOIN videotags vt ON vt.video_id=videos.id LEFT JOIN tags ON vt.tag_id=tags.id ');
+        groupings.push('vt.video_id');
+    }
+    const join = joins.join(' ');
+    groupings.push('videos.id');
+    const groupBy = groupings.join(',');
+
+
     const sql = format(
-        `SELECT videos.*, string_agg(tags.tag, ', ') as tag, 
-              string_agg(DISTINCT playlists.playlist_id, ', ') as playlist_id,
-              string_agg(DISTINCT playlists.name, ', ') as name,
-              to_char(videos.published_at, 'DD.MM.YYYY HH:mm:SS') as published_at, 
-              to_char(videos.deleted_at, 'DD.MM.YYYY HH:mm:SS') as deleted_at 
-              FROM videos LEFT JOIN playlistvideos pv ON pv.video_id=videos.id LEFT JOIN playlists ON pv.playlist_id=playlists.id 
-              LEFT JOIN videotags vt ON vt.video_id=videos.id LEFT JOIN tags ON vt.tag_id=tags.id 
-              ${where} GROUP BY (pv.video_id, vt.video_id, videos.id) ${having} ORDER BY videos.%I ${isAsc ? 'ASC' : 'DESC'} LIMIT $1 OFFSET $2`, sortCol);
+        `SELECT videos.description, ${select}
+              FROM videos 
+              ${join}
+              ${where} GROUP BY (${groupBy}) ${having} ORDER BY videos.%I ${isAsc ? 'ASC' : 'DESC'} LIMIT $1 OFFSET $2`, sortCol);
 
 
     console.log(sql, args);
@@ -196,14 +240,18 @@ function videoCount(whereInfo) {
      because we need to join the table in order to check it. We want to
      omit the join if possible for performance so we do the check here
       */
+    const joins = [];
+    if (cols.indexOf('tag') >= 0) {
+        joins.push('LEFT JOIN videotags vt ON vt.video_id = videos.id LEFT JOIN tags ON vt.tag_id = tags.id ')
+    }
+
+    if (cols.indexOf('name') >= 0|| cols.indexOf('playlist_id') >= 0) {
+        joins.push('LEFT JOIN playlistvideos pv ON videos.id = pv.video_id LEFT JOIN playlists ON pv.playlist_id = playlists.id')
+    }
+
     if (cols.indexOf('tag') >= 0 || cols.indexOf('name') >= 0 || cols.indexOf('playlist_id') >= 0) {
         return pool.query(`SELECT COUNT(DISTINCT (videos.id))
-        FROM videos
-               LEFT JOIN videotags vt ON vt.video_id = videos.id
-               LEFT JOIN tags ON vt.tag_id = tags.id 
-               LEFT JOIN playlistvideos pv ON videos.id = pv.video_id
-               LEFT JOIN playlists ON pv.playlist_id = playlists.id
-               ${where}`, args);
+                           FROM videos ${joins.join(' ')} ${where}`, args);
 
     } else {
         return pool.query(`SELECT COUNT(*) FROM videos ${where}`, args);

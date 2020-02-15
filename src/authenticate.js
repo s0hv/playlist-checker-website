@@ -13,6 +13,7 @@ export function getToken() {
 }
 
 export function withToken(url, token, body, headers, method='GET') {
+    console.log(url);
     return fetch(url, {
         headers: {
             Authorization: `Bearer ${token}`,

@@ -37,8 +37,11 @@ module.exports = function (app) {
 
         let sortCol = sort[0];
         const whereList = parseWhere(req.query.where);
+        const selectedColumns = req.query.select;
 
-        getVideos(sortCol, sort[1], limit, offset, whereList)
+        if (!Array.isArray(selectedColumns)) return res.status(400).json({error: 'Invalid request. Selection missing'});
+
+        getVideos(sortCol, sort[1], limit, offset, whereList, selectedColumns)
             .then(rows => res.json(rows))
             .catch(err => {
                 console.log(err);
