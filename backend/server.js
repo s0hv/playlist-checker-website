@@ -50,6 +50,6 @@ discord(app);
 
 const httpsServer = https.createServer(credentials, app);
 
-httpsServer.listen(port, () => {
+httpsServer.listen(port, '0.0.0.0', () => {
   console.log('We are live on ' + port);
 });
