@@ -36,7 +36,6 @@ import {
     DragDropProvider,
     Grid,
     PagingPanel,
-    Table,
     TableColumnReordering,
     TableColumnResizing,
     TableColumnVisibility,
@@ -46,6 +45,7 @@ import {
     TableHeaderRow,
     TableRowDetail,
     Toolbar,
+    VirtualTable,
 } from '@devexpress/dx-react-grid-material-ui';
 import {Loading} from './../styles/loading';
 import {IconButton} from "@material-ui/core";
@@ -287,6 +287,7 @@ class VideoGrid extends React.PureComponent {
             currentPage: 0,
             loading: true,
             redirectToLogin: false,
+            tableHeight: window.innerHeight,
         };
 
         this.changeSorting = this.changeSorting.bind(this);
@@ -312,9 +313,13 @@ class VideoGrid extends React.PureComponent {
             cookies.set('hiddenColumns', columnNames, {maxAge: 604800});
         };
 
+        this.setHeight = () => { this.setState({ tableHeight: window.innerHeight - 136 })}
+
     }
 
     componentDidMount() {
+        window.addEventListener('resize', this.setHeight);
+
         const hiddenCols = cookies.get('hiddenColumns');
         if (hiddenCols && Array.isArray(hiddenCols)) {
             this.setState({ hiddenColumnNames: hiddenCols });
@@ -333,6 +338,7 @@ class VideoGrid extends React.PureComponent {
     }
 
     componentWillUnmount() {
+        window.removeEventListener('resize', this.setHeight);
         clearTimeout(this.filterTimeout);
         this.filterTimeout = undefined
     }
@@ -624,7 +630,10 @@ class VideoGrid extends React.PureComponent {
                 />
                 <IntegratedFiltering columnExtensions={filteringColumnExtensions}/>
                 <DragDropProvider />
-                <Table columnExtensions={columnExtensions} />
+                <VirtualTable
+                    columnExtensions={columnExtensions}
+                    height={window.innerHeight - 136}  // 136 calculated with trial and error
+                />
 
                 <TableColumnResizing
                     columnWidths={columnWidths}
