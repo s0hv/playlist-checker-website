@@ -83,7 +83,7 @@ class SignIn extends React.PureComponent {
             } else if (!json.token) {
               this.setState({error: 'Internal server error (500)', ...data});
             } else {
-              cookies.set('token', json.token ,{maxAge: json.expires_in});
+              cookies.set('token', json.token ,{maxAge: json.expires_in, secure: true});
               this.setState({isAuthenticated: true, ...data})
             }
           })

@@ -25,3 +25,5 @@ yarn-error.log*
 config.js
 config.json
 server_config.json
+
+/backend/sslcert

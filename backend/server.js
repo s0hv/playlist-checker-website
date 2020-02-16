@@ -2,7 +2,14 @@ var cors = require("cors");
 const express = require('express');
 const exjwt = require('express-jwt');
 const config = require('./server_config.json');
+const https = require('https');
+const fs = require('fs');
 var bodyParser = require('body-parser');
+
+const privateKey = fs.readFileSync('sslcert/server.key');
+const certificate = fs.readFileSync('sslcert/server.crt');
+
+const credentials = {key: privateKey, cert: certificate};
 
 const SECRET = config.secret;
 if (!SECRET) throw new Error('No secret provided');
@@ -41,6 +48,8 @@ app.use('/videos', videoRouter);
 const discord = require('./routes/discord');
 discord(app);
 
-app.listen(port, () => {
+const httpsServer = https.createServer(credentials, app);
+
+httpsServer.listen(port, () => {
   console.log('We are live on ' + port);
 });
