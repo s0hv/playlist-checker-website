@@ -47,8 +47,9 @@ import {
 } from '@devexpress/dx-react-grid-material-ui';
 import {Loading} from './../styles/loading';
 import {IconButton} from "@material-ui/core";
+import Cookies from "universal-cookie/cjs";
 
-
+const cookies = new Cookies();
 // Define constants that will be used in this file
 
 // We define the function that returns null here instead of in render
@@ -281,11 +282,23 @@ class VideoGrid extends React.PureComponent {
 
         this.changeHiddenColumnNames = (columnNames) => {
             this.setState({hiddenColumnNames: columnNames});
+            // maxAge == 7 days
+            cookies.set('hiddenColumns', columnNames, {maxAge: 604800});
         };
 
     }
 
     componentDidMount() {
+        const hiddenCols = cookies.get('hiddenColumns');
+        if (hiddenCols && hiddenCols.forEach) {
+            const {hiddenColumnNames} = this.state;
+            hiddenCols.forEach(col => {
+                if (hiddenColumnNames.indexOf(col) >= 0) return;
+                hiddenColumnNames.push(col);
+            });
+            this.setState({ hiddenColumnNames });
+        }
+
         this.loadData();
     }
 
