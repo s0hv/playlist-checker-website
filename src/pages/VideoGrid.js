@@ -70,6 +70,10 @@ const IntegerFilters = ['equal', 'greaterThan', 'greaterThanOrEqual', 'lessThan'
 // Filters used for array columns
 const ArrayFilters = ['equal', 'notEqual'];
 
+// filters for video id
+const VideoIDFilters = ['equal', 'notEqual'];
+const VideoID = ['video_id'];
+
 // Returns function for the specified filter type.
 // The functions take the filterable value as their parameter and return
 //a string that can be used in the where query argument
@@ -582,6 +586,11 @@ class VideoGrid extends React.PureComponent {
                 <DataTypeProvider
                     for={arrayColumns}
                     availableFilterOperations={ArrayFilters}
+                />
+
+                <DataTypeProvider
+                    for={VideoID}
+                    availableFilterOperations={VideoIDFilters}
                 />
 
                 <SortingState
