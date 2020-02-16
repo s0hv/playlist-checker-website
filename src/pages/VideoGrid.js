@@ -33,9 +33,11 @@ import {
 } from '@devexpress/dx-react-grid';
 import {
     ColumnChooser,
+    DragDropProvider,
     Grid,
     PagingPanel,
     Table,
+    TableColumnReordering,
     TableColumnResizing,
     TableColumnVisibility,
     TableEditColumn,
@@ -240,6 +242,22 @@ class VideoGrid extends React.PureComponent {
                 {columnName: 'downloaded_format', width: 300},
             ],
 
+            columnOrder: [
+                'id',
+                'video_id',
+                'title',
+                'published_at',
+                'tag',
+                'thumbnail',
+                'deleted',
+                'download_type',
+                'alternative',
+                'name',
+                'playlist_id',
+                'deleted_at',
+                'downloaded_format'
+            ],
+
             editableColumnExtensions: [
                 {columnName: 'alternative', editingEnabled: true},
                 {columnName: 'download_type', editingEnabled: true},
@@ -275,6 +293,10 @@ class VideoGrid extends React.PureComponent {
 
         this.changeEditingRowIds = editingRowIds => this.setState({ editingRowIds });
         this.changeRowChanges = rowChanges => this.setState({ rowChanges });
+        this.setColumnOrder = columnOrder => {
+            this.setState({ columnOrder });
+            cookies.set('columnOrder', columnOrder, {maxAge: 604800})
+        };
 
         this.changeColumnWidths = (columnWidths) => {
             this.setState({ columnWidths });
@@ -290,13 +312,13 @@ class VideoGrid extends React.PureComponent {
 
     componentDidMount() {
         const hiddenCols = cookies.get('hiddenColumns');
-        if (hiddenCols && hiddenCols.forEach) {
-            const {hiddenColumnNames} = this.state;
-            hiddenCols.forEach(col => {
-                if (hiddenColumnNames.indexOf(col) >= 0) return;
-                hiddenColumnNames.push(col);
-            });
-            this.setState({ hiddenColumnNames });
+        if (hiddenCols && Array.isArray(hiddenCols)) {
+            this.setState({ hiddenColumnNames: hiddenCols });
+        }
+
+        const columnOrder = cookies.get('columnOrder');
+        if (columnOrder &&  Array.isArray(columnOrder)) {
+            this.setState({ columnOrder })
         }
 
         this.loadData();
@@ -528,6 +550,7 @@ class VideoGrid extends React.PureComponent {
         totalCount,
         loading,
         redirectToLogin,
+        columnOrder,
     } = this.state;
 
     if (redirectToLogin) return <Redirect to='/login'/>;
@@ -591,6 +614,7 @@ class VideoGrid extends React.PureComponent {
                     columnExtensions={filterableColumns}
                 />
                 <IntegratedFiltering columnExtensions={filteringColumnExtensions}/>
+                <DragDropProvider />
                 <Table columnExtensions={columnExtensions} />
 
                 <TableColumnResizing
@@ -618,6 +642,10 @@ class VideoGrid extends React.PureComponent {
                     width={100}
                     showEditCommand
                     commandComponent={Command}
+                />
+                <TableColumnReordering
+                    order={columnOrder}
+                    onOrderChange={this.setColumnOrder}
                 />
                 <RowDetailState />
                 <TableRowDetail
