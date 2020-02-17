@@ -48,7 +48,7 @@ import {
     VirtualTable,
 } from '@devexpress/dx-react-grid-material-ui';
 import {Loading} from './../styles/loading';
-import {IconButton} from "@material-ui/core";
+import {IconButton, Link} from "@material-ui/core";
 import Cookies from "universal-cookie/cjs";
 
 const cookies = new Cookies();
@@ -112,7 +112,12 @@ const FilterCellRender = ({ filteringEnabled, column, ...restProps }) => {
 // Element that
 const RowDetail = ({ row }) => (
   <pre style={{ fontSize: 14 }}>
-    {row.description}
+      <Link href={`https://www.youtube.com/results?search_query=${row.title}`}
+            color='secondary' rel="noreferrer" target='_blank'>
+          Search title from youtube
+      </Link>
+      <br/>
+      {row.description}
   </pre>
 );
 
@@ -456,7 +461,7 @@ class VideoGrid extends React.PureComponent {
 
         cols.add('id');
         cols.add('video_id');
-        console.log(cols);
+        cols.add('title');
 
         return cols;
     }
