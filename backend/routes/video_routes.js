@@ -25,6 +25,23 @@ function parseWhere(whereArgs) {
     return whereList
 }
 
+function parseSort(sortArgs) {
+    const sortList = [];
+
+    if (sortArgs instanceof Object) {
+        Object.keys(sortArgs).forEach(col => {
+            if (typeof sortArgs[col] !== 'string') return;
+
+            sortList.push({
+                column: col,
+                direction: sortArgs[col]
+            });
+        })
+    }
+
+    return sortList;
+}
+
 module.exports = function (app) {
     /*
     Whereclause needs to have the comparison operator and value separated by space
@@ -33,15 +50,13 @@ module.exports = function (app) {
     app.get('/', (req, res) => {
         let limit = req.query.limit || 500;
         let offset = parseInt(req.query.offset) || 0;
-        let sort = (req.query.sort || 'id ASC').split(' ');
 
-        let sortCol = sort[0];
         const whereList = parseWhere(req.query.where);
         const selectedColumns = req.query.select;
 
         if (!Array.isArray(selectedColumns)) return res.status(400).json({error: 'Invalid request. Selection missing'});
 
-        getVideos(sortCol, sort[1], limit, offset, whereList, selectedColumns)
+        getVideos(parseSort(req.query.sort), limit, offset, whereList, selectedColumns)
             .then(rows => res.json(rows))
             .catch(err => {
                 console.log(err);

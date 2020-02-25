@@ -174,13 +174,25 @@ function parseWhere(whereInfo, arglen=0, useHaving=true) {
     return {where: whereClause, args: args, having: havingClause, cols: [...whereCols, ...havingCols]};
 }
 
-function getVideos(sortCol, sortDirection, limit, offset, whereInfo, selectedColumns) {
-    if (!checkColumnName(sortCol)) {
-        return new Promise((resolve) => resolve({error: 'Invalid sort column given'}))
-    }
+function parseSort(sortInfo) {
+    const sortCols = [];
+    const sort = [];
 
+    sortInfo.forEach(({ column, direction }) => {
+        if (TABLE_COLUMNS.videos.indexOf(column) < 0) return;
+
+        direction = direction.toUpperCase();
+        if (direction !== 'ASC' && direction !== 'DESC') return;
+
+        sortCols.push(column);
+        sort.push(`videos.%I ${direction}`)
+    });
+
+    return {sort: sort.join(','), sortCols: sortCols};
+}
+
+function getVideos(sortInfo, limit, offset, whereInfo, selectedColumns) {
     limit = Math.min(limit, 500);
-    let isAsc = (sortDirection || 'ASC').toUpperCase() === 'ASC';
     const args = [limit, offset];
     console.log(whereInfo);
 
@@ -220,12 +232,13 @@ function getVideos(sortCol, sortDirection, limit, offset, whereInfo, selectedCol
     groupings.push('videos.id');
     const groupBy = groupings.join(',');
 
+    const { sort, sortCols } = parseSort(sortInfo);
 
     const sql = format(
         `SELECT videos.description, ${select}
               FROM videos 
               ${join}
-              ${where} GROUP BY (${groupBy}) ${having} ORDER BY videos.%I ${isAsc ? 'ASC' : 'DESC'} LIMIT $1 OFFSET $2`, sortCol);
+              ${where} GROUP BY (${groupBy}) ${having} ${sort ? 'ORDER BY ' + sort : ''} LIMIT $1 OFFSET $2`, ...sortCols);
 
 
     console.log(sql, args);

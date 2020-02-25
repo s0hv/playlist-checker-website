@@ -366,6 +366,9 @@ class VideoGrid extends React.PureComponent {
     }
 
     changeSorting(sorting) {
+        if (sorting.find(sort => sort.columnName === 'id') === undefined) {
+            sorting.push({columnName: 'id', direction: 'asc'})
+        }
         this.setState({
             loading: true,
             sorting,
@@ -469,11 +472,11 @@ class VideoGrid extends React.PureComponent {
     queryString(whereString) {
         const { sorting, pageSize, currentPage } = this.state;
         let queryString = `${URL}?limit=${pageSize}&offset=${currentPage*pageSize}`;
-        const columnSorting = sorting[0];
-        if (columnSorting) {
-            const sortingDirection = columnSorting.direction === 'desc' ? ' desc' : ' asc';
-            queryString = `${queryString}&sort=${columnSorting.columnName}${encodeURIComponent(sortingDirection)}`;
-        }
+
+        sorting.forEach(columnSorting => {
+            const sortingDirection = columnSorting.direction === 'desc' ? 'desc' : 'asc';
+            queryString = `${queryString}&sort[${columnSorting.columnName}]=${sortingDirection}`;
+        });
 
         if (!whereString) whereString = this.whereString();
         if (whereString !== '') queryString = `${queryString}&${whereString}`;
