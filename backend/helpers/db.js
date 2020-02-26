@@ -140,7 +140,12 @@ function parseWhere(whereInfo, arglen=0, useHaving=true) {
             havingCols.push(value, column);
             having.push(s);
         } else {
-            args.push(value);
+            if (column === 'id' && isNaN(value)) {
+                args.push(null);
+            } else {
+                args.push(value);
+            }
+
             // Format string ready for comparison
             let s = COLUMN_TEMPLATES[column]({comp: comparator, param: i});
 
