@@ -305,7 +305,7 @@ class VideoGrid extends React.PureComponent {
         this.changeRowChanges = rowChanges => this.setState({ rowChanges });
         this.setColumnOrder = columnOrder => {
             this.setState({ columnOrder });
-            cookies.set('columnOrder', columnOrder, {maxAge: 604800})
+            cookies.set('columnOrder', columnOrder, {maxAge: 2592000})
         };
 
         this.changeColumnWidths = (columnWidths) => {
@@ -314,8 +314,8 @@ class VideoGrid extends React.PureComponent {
 
         this.changeHiddenColumnNames = (columnNames) => {
             this.setState({hiddenColumnNames: columnNames});
-            // maxAge == 7 days
-            cookies.set('hiddenColumns', columnNames, {maxAge: 604800});
+            // maxAge == 30 days
+            cookies.set('hiddenColumns', columnNames, {maxAge: 2592000});
         };
 
         this.setHeight = () => { this.setState({ tableHeight: window.innerHeight - 136 })}
