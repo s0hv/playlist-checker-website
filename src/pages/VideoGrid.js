@@ -6,7 +6,6 @@ import CancelIcon from '@material-ui/icons/Cancel';
 import withRoot from './../withRoot';
 import {getToken, withToken} from './../authenticate';
 import {Redirect} from "react-router-dom";
-import {API} from './../config/config';
 import {
     dateColumnFilters,
     DateEditor,
@@ -47,7 +46,7 @@ import {
     Toolbar,
     VirtualTable,
 } from '@devexpress/dx-react-grid-material-ui';
-import {Loading} from './../styles/loading';
+import {Loading} from '../styles/loading';
 import {IconButton, Link} from "@material-ui/core";
 import Cookies from "universal-cookie/cjs";
 
@@ -62,7 +61,7 @@ const filterMessages = {...dateFilterMessages, ...boolFilterMessages};
 const filterIcons = {...boolFilterIcons, ...dateFilterIcons};
 
 // Base api url
-const URL = `${API}/videos`;
+const URL = `/api/videos`;
 
 // Filters used for integer columns
 const IntegerFilters = ['equal', 'greaterThan', 'greaterThanOrEqual', 'lessThan', 'lessThanOrEqual', 'notEqual'];

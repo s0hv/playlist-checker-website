@@ -1,10 +1,11 @@
-var cors = require("cors");
+const cors = require("cors");
 const express = require('express');
 const exjwt = require('express-jwt');
 const config = require('./server_config.json');
 const https = require('https');
 const fs = require('fs');
-var bodyParser = require('body-parser');
+const bodyParser = require('body-parser');
+const path = require('path');
 
 const privateKey = fs.readFileSync('sslcert/server.key');
 const certificate = fs.readFileSync('sslcert/server.crt');
@@ -17,7 +18,7 @@ const app = express();
 
 app.use(bodyParser.json());
 app.use(cors());
-app.use(exjwt({
+app.use('/api/*', exjwt({
   secret: SECRET,
   getToken: function fromHeaderOrQuerystring (req) {
     if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
@@ -39,11 +40,13 @@ app.use(function (err, req, res, next) {
     }
 });
 
+app.use('/', express.static(path.join(__dirname, '..', 'build')))
+
 const port = config.server_port;
 
-var videoRouter = express.Router();
+const videoRouter = express.Router();
 require('./routes')(videoRouter);
-app.use('/videos', videoRouter);
+app.use('/api/videos', videoRouter);
 
 const discord = require('./routes/discord');
 discord(app);

@@ -13,7 +13,7 @@ import withRoot from './../withRoot';
 import Cookies from 'universal-cookie';
 import {Redirect} from "react-router-dom";
 import {isAuthenticated} from "../authenticate";
-import {API, REDIRECT_URI} from '../config/config'
+import {REDIRECT_URI} from '../config/config'
 
 
 const CLIENT_ID = '488051554839035914';
@@ -74,7 +74,7 @@ class SignIn extends React.PureComponent {
     if (code) {
       this.setState({loading: true});
       let data = {loading: false};
-      fetch(`${API}/discord/callback?code=${code}`)
+      fetch(`/discord/callback?code=${code}`)
           .then(resp => resp.json())
 
           .then(json => {
