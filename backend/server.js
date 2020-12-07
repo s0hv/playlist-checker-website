@@ -40,8 +40,6 @@ app.use(function (err, req, res, next) {
     }
 });
 
-app.use('/', express.static(path.join(__dirname, '..', 'build')))
-
 const port = config.server_port;
 
 const videoRouter = express.Router();
@@ -50,6 +48,10 @@ app.use('/api/videos', videoRouter);
 
 const discord = require('./routes/discord');
 discord(app);
+
+app.use('/static', express.static(path.join(__dirname, '..', 'build', 'static')))
+app.use('*', express.static(path.join(__dirname, '..', 'build', 'index.html')))
+
 
 const httpsServer = https.createServer(credentials, app);
 
