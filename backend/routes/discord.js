@@ -1,5 +1,4 @@
 const fetch = require('node-fetch');
-const queryString = require('query-string');
 const jwt = require('jsonwebtoken');
 
 const SECRET = require('../server_config').secret;
@@ -35,7 +34,8 @@ module.exports = function (app) {
             code: code,
             scope: SCOPE,
         };
-        const params = queryString.stringify(data);
+
+        const params = new URLSearchParams(data).toString();
         fetch(`https://discord.com/api/oauth2/token`,
             {
                 method: 'POST',

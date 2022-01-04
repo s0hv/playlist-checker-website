@@ -13,8 +13,9 @@ import withRoot from './../withRoot';
 import Cookies from 'universal-cookie';
 import { Redirect } from 'react-router-dom';
 import { isAuthenticated } from '../authenticate';
-import { REDIRECT_URI } from '../config/config'
+import config from '../config/config.json';
 
+const REDIRECT_URI = config.REDIRECT_URI;
 
 const CLIENT_ID = '488051554839035914';
 const REDIRECT = encodeURIComponent(REDIRECT_URI);

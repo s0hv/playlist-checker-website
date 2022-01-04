@@ -20,6 +20,7 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use('/api/*', exjwt({
   secret: SECRET,
+  algorithms: ['HS256'],
   getToken: function fromHeaderOrQuerystring (req) {
     if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
         return req.headers.authorization.split(' ')[1];
@@ -50,8 +51,9 @@ const discord = require('./routes/discord');
 discord(app);
 
 app.use('/static', express.static(path.join(__dirname, '..', 'build', 'static')))
-app.use('*', express.static(path.join(__dirname, '..', 'build', 'index.html')))
-
+app.get('*', (req, res) => {
+    res.sendFile('index.html', {root: path.join(__dirname, '..', 'build')});
+});
 
 const httpsServer = https.createServer(credentials, app);
 
