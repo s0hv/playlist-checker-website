@@ -11,9 +11,9 @@ import Typography from '@material-ui/core/Typography';
 import withStyles from '@material-ui/core/styles/withStyles';
 import withRoot from './../withRoot';
 import Cookies from 'universal-cookie';
-import {Redirect} from "react-router-dom";
-import {isAuthenticated} from "../authenticate";
-import {REDIRECT_URI} from '../config/config'
+import { Redirect } from 'react-router-dom';
+import { isAuthenticated } from '../authenticate';
+import { REDIRECT_URI } from '../config/config'
 
 
 const CLIENT_ID = '488051554839035914';
@@ -121,7 +121,7 @@ class SignIn extends React.PureComponent {
                   variant="contained"
                   color="primary"
                   className={classes.submit}
-                  onClick={() => window.location.href = `https://discordapp.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT}&response_type=code&scope=identify%20email`}
+                  onClick={() => window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT}&response_type=code&scope=identify%20email`}
               >
                   Sign in using discord
                 </Button>

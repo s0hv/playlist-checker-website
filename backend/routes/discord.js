@@ -7,7 +7,7 @@ const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const SCOPE = 'identify email';
 const REDIRECT_URI = encodeURIComponent(require('../../src/config/config').REDIRECT_URI);
-const identifyUser = 'https://discordapp.com/api/v6/users/@me';
+const identifyUser = 'https://discord.com/api/v6/users/@me';
 
 
 function identify(token) {
@@ -36,7 +36,7 @@ module.exports = function (app) {
             scope: SCOPE,
         };
         const params = queryString.stringify(data);
-        fetch(`https://discordapp.com/api/oauth2/token`,
+        fetch(`https://discord.com/api/oauth2/token`,
             {
                 method: 'POST',
                 body: `${params}&redirect_uri=${REDIRECT_URI}`,
@@ -69,6 +69,7 @@ module.exports = function (app) {
                     })
 
                     .catch(e =>{
+                        console.log(e, json);
                         res.status(400).json({
                             status: 'ERROR',
                             success: false,
