@@ -1,0 +1,1 @@
+export { VideosTable } from './VideosTable';
