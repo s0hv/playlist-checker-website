@@ -352,6 +352,7 @@ export const VideosTable = () => {
 
   return (
     <Paper>
+      {/* @ts-ignore bug with types? Does not like Grid having children */}
       <Grid
         rows={data?.rows || noRows}
         columns={columns}
