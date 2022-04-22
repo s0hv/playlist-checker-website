@@ -57,7 +57,7 @@ export const whereValidation = (basePath: string = '') => [
     .exists({ checkNull: true, checkFalsy: true }),
   query(`${basePath}where.*.value`)
     .if(query(`${basePath}where`).exists())
-    .isString()
+    .custom((value) => typeof value === 'string' || (Array.isArray(value) && value.every(v => typeof v === 'string')))
     .exists({ checkNull: true, checkFalsy: true }),
   query(`${basePath}where.*.comp`)
     .if(query(`${basePath}where`).exists())

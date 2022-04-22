@@ -8,12 +8,13 @@ import { pool } from './index';
 import {
   ColumnFilter,
   ColumnSort,
+  PlaylistName,
   VideoRow
 } from '../../types/types';
 
 const comparators = [
   '=', 'ILIKE', 'NOT ILIKE', '<>', '<', '<=', '>', '>=',
-  'true', 'false', 'at', 'before', 'after', 'array=', 'arrayLike'] as const;
+  'true', 'false', 'at', 'before', 'after', 'array=', 'arrayLike', 'arrayAny'] as const;
 type Comparator = typeof comparators[number];
 
 type PreProcessor = (value: string | IdentifierSqlToken) => string | TaggedTemplateLiteralInvocation | IdentifierSqlToken;
@@ -62,7 +63,8 @@ const preProcessValue: {[key in Comparator]: PreProcessor} = {
   'before': dateValueTransform,
   'after': dateValueTransform,
   'array=': lowerCase,
-  'arrayLike': noPreprocess
+  'arrayLike': noPreprocess,
+  'arrayAny': (value) => sql`ANY(${sql.array(value.toString().split(','), 'int8')})`
 };
 
 const preProcessColumn: {[key in Comparator]: PreProcessor} = {
@@ -80,7 +82,8 @@ const preProcessColumn: {[key in Comparator]: PreProcessor} = {
   'before': dateColumnTransform,
   'after': dateColumnTransform,
   'array=': noPreprocess,
-  'arrayLike': noPreprocess
+  'arrayLike': noPreprocess,
+  'arrayAny': noPreprocess
 };
 
 const comparatorMapping: {[key in Comparator]: TaggedTemplateLiteralInvocation} = {
@@ -90,7 +93,7 @@ const comparatorMapping: {[key in Comparator]: TaggedTemplateLiteralInvocation} 
   '>': sql`>`,
   '>=': sql`>=`,
   'NOT ILIKE': sql`NOT ILIKE`,
-  ILIKE: sql`ILIKE`,
+  'ILIKE': sql`ILIKE`,
   '=': sql`=`,
   'true': sql`=`,
   'false': sql`=`,
@@ -98,7 +101,8 @@ const comparatorMapping: {[key in Comparator]: TaggedTemplateLiteralInvocation} 
   'before': sql`<`,
   'after': sql`>`,
   'array=': sql`=`,
-  'arrayLike': sql`ILIKE`
+  'arrayLike': sql`ILIKE`,
+  'arrayAny': sql`=`
 };
 
 /**
@@ -118,7 +122,7 @@ export type TableCols = {
 const tableCols: TableCols = {
   channel: ['channel_id', 'name', 'thumbnail'],
   files: ['thumbnail', 'audio_file', 'subtitles'],
-  playlist: ['name', 'playlist_id'],
+  playlist: ['name', 'playlist_id', 'id'],
   tag: ['tag'],
   video: [
     'id', 'site', 'video_id', 'title', 'description', 'published_at', 'deleted',
@@ -330,4 +334,8 @@ export const getVideoCount = (where?: ColumnFilter[]): Promise<number> => {
   const joins = generateJoins(tables);
 
   return pool.oneFirst<number>(sql`SELECT COUNT(*) as count FROM videos video ${joins} ${whereClause}`);
+};
+
+export const getPlaylists = (): Promise<readonly PlaylistName[]> => {
+  return pool.many<PlaylistName>(sql`SELECT "name", id FROM playlists`);
 };

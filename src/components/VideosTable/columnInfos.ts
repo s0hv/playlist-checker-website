@@ -53,6 +53,7 @@ export const columnToTableCol = {
 
   playlistName: ['playlist', 'name'],
   playlistPlaylistId: ['playlist', 'playlist_id'],
+  playlistId: ['playlist', 'id'],
 
   tagTag: ['tag', 'tag'],
 };
@@ -63,7 +64,7 @@ export const allCols = new Set(Object.keys(columnToTableCol));
 
 export const integerColumns: ColumnName[] = ['id'];
 export const arrayColumns: ColumnName[] = [
-  'tagTag', 'playlistName', 'playlistPlaylistId'
+  'tagTag', 'playlistPlaylistId'
 ];
 export const boolColumns: ColumnName[] = [
   'deleted',

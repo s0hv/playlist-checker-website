@@ -45,7 +45,8 @@ export const filterOperations = {
   after: 'before',
   arrayEqual: 'array=',
   arrayContains: 'arrayLike',
-  arrayStartswith: 'arrayLike'
+  arrayStartswith: 'arrayLike',
+  arrayAny: 'arrayAny'
 } as const;
 export type FilterOperation = keyof typeof filterOperations;
 
@@ -65,7 +66,7 @@ export const stringIdFilters: FilterOperation[] = [
 
 export const escapePercentage = (s: string): string => s.replace(/%/g, '\%');
 
-const noTransformation = (s: string) => s;
+const noTransformation = (s: any) => s;
 
 export const filterValueTransformations: {[key in FilterOperation]: (s: string) => string} = {
   contains: (s: string) => `%${escapePercentage(s)}%`,
@@ -86,7 +87,8 @@ export const filterValueTransformations: {[key in FilterOperation]: (s: string) 
   after: noTransformation,
   arrayEqual: noTransformation,
   arrayContains: (s: string) => `%${escapePercentage(s)}%`,
-  arrayStartswith: (s: string) => `${escapePercentage(s)}%`
+  arrayStartswith: (s: string) => `${escapePercentage(s)}%`,
+  arrayAny: noTransformation,
 } as const;
 
 type MaybeDate = Date | undefined | null | number;

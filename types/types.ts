@@ -40,3 +40,8 @@ export interface ColumnFilter {
   value: string
   comp: string
 }
+
+export interface PlaylistName {
+  name: string,
+  id: number
+}

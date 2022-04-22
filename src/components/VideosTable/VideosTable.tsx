@@ -39,7 +39,7 @@ import {
   getVideos,
   HttpForbidden
 } from '../../api/videos';
-import { ColumnFilter, ColumnSort } from '../../../types/types';
+import { ColumnFilter, ColumnSort, PlaylistName } from '../../../types/types';
 import {
   difference,
   FilterOperation,
@@ -79,6 +79,7 @@ import {
 } from './array';
 import transform from 'next/dist/build/babel/loader/transform';
 import { signIn, signOut, useSession } from 'next-auth/react';
+import { PlaylistNameProvider } from './PlaylistAutocomplete';
 
 const noRows: never[] = [];
 const localStorageKeys = {
@@ -97,6 +98,7 @@ const defaultVisibleCols = new Set([
   'downloadedFormat',
   'download'
 ]);
+const defaultHiddenCols = new Set(['playlistId']);
 const rowDetailCols: Readonly<ColumnName[]> = [
   'id',
   'site',
@@ -284,7 +286,7 @@ export const VideosTable = () => {
     setHiddenCols(newHiddenCols);
     window.localStorage.setItem(localStorageKeys.hiddenCols, newHiddenCols.join(','));
 
-    const visibleCols = difference(allCols, new Set(newHiddenCols));
+    const visibleCols = difference(allCols, union(new Set(newHiddenCols), defaultHiddenCols));
     setQuery({
       ...query,
       select: colsToSelectQuery(visibleCols)
@@ -305,15 +307,29 @@ export const VideosTable = () => {
 
     const where: ColumnFilter[] = [];
     for (let filter of filters) {
-      const filterOperation = filter.operation as FilterOperation || 'equal';
+      // The int database id
+      if (filter.columnName === 'playlistId') continue;
+
+      let filterOperation = filter.operation as FilterOperation || 'equal';
       if (filterOperation === 'noFilter') continue;
 
-      const [table, col] = columnToTableCol[filter.columnName as ColumnName];
+      let value: any = filter.value;
+      let columnName: ColumnName = filter.columnName as ColumnName;
+      if (columnName === 'playlistName') {
+        if (!filter.value?.length) continue;
+
+        value = (filter.value as unknown as PlaylistName[]).map(p => p.id.toString());
+
+        columnName = 'playlistId';
+      }
+      const [table, col] = columnToTableCol[columnName];
+      //if (table === 'playlist' && col === 'id') continue;
+
       const op = filterOperations[filter.operation as FilterOperation] || filterOperations.equal;
       where.push({
         col,
         table,
-        value: filterValueTransformations[filterOperation](filter.value || ''),
+        value: filterValueTransformations[filterOperation](value || ''),
         comp: op
       });
     }
@@ -361,6 +377,7 @@ export const VideosTable = () => {
           for={stringIdColumns}
           availableFilterOperations={stringIdFilters}
         />
+        <PlaylistNameProvider for={['playlistName']} />
 
         <SortingState
           sorting={sorting}
