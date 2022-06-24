@@ -106,10 +106,9 @@ export const defaultColumnWidths: Readonly<ColumnWidth[]> = [
   {columnName: 'tagTag', width: 250},
 ] as const;
 
-export const defaultFilters: Filter[] = [
+export const defaultFilters: Filter[] = boolColumns.map(columnName => (
   {
-    columnName: 'deleted',
+    columnName,
     value: ' ',
     operation: 'noFilter'
-  }
-];
+}));
