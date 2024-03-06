@@ -26,10 +26,10 @@ export const VideoRow = z.object({
   filesSubtitles: z.array(z.string()).nullish(),
   filesTotalFilesize: z.bigint().transform(Number).nullish(),
 
-  playlistName: z.string().nullish(),
-  playlistPlaylistId: z.string().nullish(),
+  playlistName: z.array(z.string()).nullish(),
+  playlistPlaylistId: z.array(z.string()).nullish(),
 
-  tagTag: z.string().nullish()
+  tagTag: z.array(z.string()).nullish(),
 });
 
 export type VideoRow = z.infer<typeof VideoRow>;
