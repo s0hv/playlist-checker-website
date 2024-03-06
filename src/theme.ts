@@ -1,5 +1,5 @@
-import { createTheme } from '@mui/material/styles';
 import { red } from '@mui/material/colors';
+import { createTheme } from '@mui/material/styles';
 import { Roboto } from 'next/font/google';
 
 
@@ -22,6 +22,9 @@ const theme = createTheme({
     error: {
       main: red.A400,
     },
+  },
+  typography: {
+    fontFamily: roboto.style.fontFamily,
   },
 });
 

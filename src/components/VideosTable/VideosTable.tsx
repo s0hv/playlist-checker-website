@@ -1,55 +1,54 @@
 import {
-  FunctionComponent,
-  useCallback, useEffect,
-  useRef,
-  useState
-} from 'react';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { CircularProgress, Paper, IconButton } from '@mui/material';
-import {
-  Grid,
-  Table,
-  TableHeaderRow,
-  PagingPanel,
-  Toolbar,
-  TableColumnVisibility,
-  ColumnChooser,
-  TableFilterRow,
-  TableColumnResizing,
-  TableRowDetail,
-  DragDropProvider,
-  TableColumnReordering
-} from '@devexpress/dx-react-grid-material-ui';
-import {
   CustomPaging,
+  DataTypeProvider,
+  Filter,
+  FilteringState,
   PagingState,
+  RowDetailState,
   Sorting,
   SortingState,
-  FilteringState,
-  Filter,
-  DataTypeProvider,
   TableColumnWidthInfo,
-  RowDetailState, TableFilterRow as TableFilterRowBase
+  TableFilterRow as TableFilterRowBase
 } from '@devexpress/dx-react-grid';
-import { useQuery } from 'react-query';
-import throttle from 'lodash.throttle';
 import {
-  getVideoCount,
-  GetVideoQuery,
-  getVideos,
-  HttpForbidden
-} from '../../api/videos';
+  ColumnChooser,
+  DragDropProvider,
+  Grid,
+  PagingPanel,
+  Table,
+  TableColumnReordering,
+  TableColumnResizing,
+  TableColumnVisibility,
+  TableFilterRow,
+  TableHeaderRow,
+  TableRowDetail,
+  Toolbar
+} from '@devexpress/dx-react-grid-material-ui';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { CircularProgress, IconButton, Paper } from '@mui/material';
+import throttle from 'lodash.throttle';
+import { signIn, signOut, useSession } from 'next-auth/react';
+import { FunctionComponent, useCallback, useEffect, useRef, useState } from 'react';
+import { useQuery } from 'react-query';
 import { ColumnFilter, ColumnSort, PlaylistName } from '../../../types/types';
+import { getVideoCount, GetVideoQuery, getVideos, HttpForbidden } from '../../api/videos';
 import {
   difference,
   FilterOperation,
   filterOperations,
-  filterValueTransformations, integerFilters, stringIdFilters, union
+  filterValueTransformations,
+  integerFilters,
+  stringIdFilters,
+  union
 } from '../../utils';
+import { arrayFilterIcons, arrayFilterMessages, ArrayTypeProvider } from './array';
+import { boolFilterIcons, boolFilterMessages, boolFilters, BoolTypeProvider } from './boolean';
+import { bytesFilters, BytesTypeProvider } from './bytes';
 import {
   allCols,
   arrayColumns,
   boolColumns,
+  bytesColumns,
   ColumnName,
   columns,
   columnToTableCol,
@@ -59,27 +58,9 @@ import {
   integerColumns,
   stringIdColumns
 } from './columnInfos';
-import { RowDetail } from './RowDetail';
-import {
-  boolFilterIcons,
-  boolFilterMessages,
-  boolFilters,
-  BoolTypeProvider
-} from './boolean';
-import {
-  dateColumnFilters,
-  dateFilterIcons,
-  dateFilterMessages,
-  DateTypeProvider
-} from './dates';
-import {
-  arrayFilterIcons,
-  arrayFilterMessages,
-  ArrayTypeProvider
-} from './array';
-import transform from 'next/dist/build/babel/loader/transform';
-import { signIn, signOut, useSession } from 'next-auth/react';
+import { dateColumnFilters, dateFilterIcons, dateFilterMessages, DateTypeProvider } from './dates';
 import { PlaylistNameProvider } from './PlaylistAutocomplete';
+import { RowDetail } from './RowDetail';
 
 const noRows: never[] = [];
 const localStorageKeys = {
@@ -194,7 +175,14 @@ export const VideosTable = () => {
   useEffect(() => {
     const order = window.localStorage.getItem(localStorageKeys.columnOrder);
     if (order !== null) {
-      updateColumnOrder(order.split(','));
+      const oldOrder = order.split(',');
+      columns.forEach(col => {
+        if (!oldOrder.includes(col.name)) {
+          oldOrder.push(col.name);
+        }
+      });
+
+      updateColumnOrder(oldOrder);
     }
 
     const hidden = window.localStorage.getItem(localStorageKeys.hiddenCols);
@@ -286,6 +274,7 @@ export const VideosTable = () => {
     setHiddenCols(newHiddenCols);
     window.localStorage.setItem(localStorageKeys.hiddenCols, newHiddenCols.join(','));
 
+
     const visibleCols = difference(allCols, union(new Set(newHiddenCols), defaultHiddenCols));
     setQuery({
       ...query,
@@ -329,7 +318,7 @@ export const VideosTable = () => {
       where.push({
         col,
         table,
-        value: filterValueTransformations[filterOperation](value || ''),
+        value: filterValueTransformations[filterOperation](value == undefined ? '' : value),
         comp: op
       });
     }
@@ -365,6 +354,10 @@ export const VideosTable = () => {
         <DataTypeProvider
           for={integerColumns}
           availableFilterOperations={integerFilters}
+        />
+        <BytesTypeProvider
+          for={bytesColumns}
+          availableFilterOperations={bytesFilters}
         />
         <ArrayTypeProvider
           for={arrayColumns}

@@ -1,7 +1,7 @@
-import { VideoRow } from '../../../types/types';
 import { css } from '@emotion/react';
-import { FunctionComponent } from 'react';
 import Image from 'next/image';
+import { FunctionComponent } from 'react';
+import { type VideoRow } from '../../../types/types';
 import { toCdnUrl } from '../../utils';
 
 const embedSize = {
@@ -20,7 +20,7 @@ const YouTube: FunctionComponent<YouTubeProps> = ({ videoId }: YouTubeProps) => 
   </iframe>
 );
 
-type VideoProps = { filename?: string, thumbnail?: string };
+type VideoProps = { filename?: string | null, thumbnail?: string | null };
 const VideoContainer: FunctionComponent<VideoProps> = ({ filename, thumbnail }: VideoProps) => {
   if (!filename) {
     const biggest = Math.max(embedSize.w, embedSize.h);

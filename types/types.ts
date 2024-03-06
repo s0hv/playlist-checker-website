@@ -1,32 +1,38 @@
-export interface VideoRow {
-  id?: number
-  videoId?: string
-  title?: string
-  description?: string
-  publishedAt?: Date
-  deleted?: boolean
-  deletedAt?: Date
-  alternative?: string
-  thumbnail?: string
-  downloadFormat?: string
-  downloadedFilename?: string
-  downloadedFormat?: string
-  download?: boolean
-  force_redownload?: boolean
+import { z } from 'zod';
 
-  channelChannelId?: string
-  channelName?: string
-  channelThumbnail?: string
+export const VideoRow = z.object({
+  id: z.bigint().transform(Number).optional(),
+  videoId: z.string().optional(),
+  title: z.string().optional(),
+  description: z.string().nullish(),
+  publishedAt: z.number().nullish(),
+  deleted: z.boolean().optional(),
+  deletedAt: z.number().nullish(),
+  alternative: z.string().nullish(),
+  thumbnail: z.string().nullish(),
+  downloadFormat: z.string().nullish(),
+  downloadedFilename: z.string().nullish(),
+  downloadedFormat: z.string().nullish(),
+  download: z.boolean().nullish(),
+  forceRedownload: z.boolean().nullish(),
+  filesize: z.bigint().transform(Number).nullish(),
 
-  filesThumbnail?: string
-  filesAudioFile?: string
-  filesSubtitles?: string[]
+  channelChannelId: z.string().nullish(),
+  channelName: z.string().nullish(),
+  channelThumbnail: z.string().nullish(),
 
-  playlistName?: string
-  playlistPlaylistId?: string
+  filesThumbnail: z.string().nullish(),
+  filesAudioFile: z.string().nullish(),
+  filesSubtitles: z.array(z.string()).nullish(),
+  filesTotalFilesize: z.bigint().transform(Number).nullish(),
 
-  tagTag?: string
-}
+  playlistName: z.string().nullish(),
+  playlistPlaylistId: z.string().nullish(),
+
+  tagTag: z.string().nullish()
+});
+
+export type VideoRow = z.infer<typeof VideoRow>;
 
 export interface ColumnSort {
   col: string
@@ -41,7 +47,8 @@ export interface ColumnFilter {
   comp: string
 }
 
-export interface PlaylistName {
-  name: string,
-  id: number
-}
+export const PlaylistName = z.object({
+  name: z.string(),
+  id: z.bigint().transform(Number)
+});
+export type PlaylistName = z.infer<typeof PlaylistName>;

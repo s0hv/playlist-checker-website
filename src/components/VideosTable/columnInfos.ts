@@ -1,8 +1,4 @@
-import {
-  Column,
-  Filter,
-  TableColumnWidthInfo
-} from '@devexpress/dx-react-grid';
+import { Column, Filter, TableColumnWidthInfo } from '@devexpress/dx-react-grid';
 
 export const columns: Column[] = [
   { name: 'id', title: 'ID' },
@@ -16,15 +12,20 @@ export const columns: Column[] = [
   { name: 'downloadedFilename', title: 'Filename' },
   { name: 'downloadedFormat', title: 'Downloaded format' },
   { name: 'forceRedownload', title: 'Force redownload' },
+  { name: 'filesize', title: 'Filesize' },
 
   { name: 'channelChannelId', title: 'Channel id' },
   { name: 'channelName', title: 'Channel name' },
+
+  { name: 'filesTotalFilesize', title: 'Filesize of extras' },
+  { name: 'filesSubtitles', title: 'Subtitle files' },
+  { name: 'filesAudioFile', title: 'Audio filename' },
 
   { name: 'playlistName', title: 'Playlists' },
   { name: 'playlistPlaylistId', title: 'Playlist ids' },
 
   { name: 'tagTag', title: 'Tags' }
-];
+] satisfies { name: ColumnName, title: string  }[];
 
 export const columnToTableCol = {
   id: ['video', 'id'],
@@ -42,6 +43,7 @@ export const columnToTableCol = {
   downloadedFormat: ['video', 'downloaded_format'],
   download: ['video', 'download'],
   forceRedownload: ['video', 'force_redownload'],
+  filesize: ['video', 'filesize'],
 
   channelChannelId: ['channel', 'channel_id'],
   channelName: ['channel', 'name'],
@@ -50,6 +52,7 @@ export const columnToTableCol = {
   filesThumbnail: ['files', 'thumbnail'],
   filesAudioFile: ['files', 'audio_file'],
   filesSubtitles: ['files', 'subtitles'],
+  filesTotalFilesize: ['files', 'total_filesize'],
 
   playlistName: ['playlist', 'name'],
   playlistPlaylistId: ['playlist', 'playlist_id'],
@@ -64,7 +67,7 @@ export const allCols = new Set(Object.keys(columnToTableCol));
 
 export const integerColumns: ColumnName[] = ['id'];
 export const arrayColumns: ColumnName[] = [
-  'tagTag', 'playlistPlaylistId'
+  'tagTag', 'playlistPlaylistId', 'filesSubtitles'
 ];
 export const boolColumns: ColumnName[] = [
   'deleted',
@@ -78,6 +81,10 @@ export const dateColumns: ColumnName[] = [
 export const stringIdColumns: ColumnName[] = [
   'videoId',
   'channelChannelId'
+];
+export const bytesColumns: ColumnName[] = [
+  'filesize',
+  'filesTotalFilesize'
 ];
 
 type ColumnWidth = TableColumnWidthInfo & { columnName: ColumnName };
@@ -95,10 +102,15 @@ export const defaultColumnWidths: Readonly<ColumnWidth[]> = [
   {columnName: 'downloadedFormat', width: 300},
   {columnName: 'downloadedFilename', width: 300},
   {columnName: 'forceRedownload', width: 100},
+  {columnName: 'filesize', width: 150},
 
   {columnName: 'channelChannelId', width: 300},
   {columnName: 'channelName', width: 200},
   {columnName: 'channelThumbnail', width: 200},
+
+  {columnName: 'filesTotalFilesize', width: 180},
+  {columnName: 'filesSubtitles', width: 300},
+  {columnName: 'filesAudioFile', width: 300},
 
   {columnName: 'playlistName', width: 300},
   {columnName: 'playlistPlaylistId', width: 300},

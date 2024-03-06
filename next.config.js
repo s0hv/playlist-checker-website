@@ -7,14 +7,7 @@ const nextConfig = {
   compiler: {
     emotion: true,
   },
-  modularizeImports: {
-    '@mui/material': {
-      transform: '@mui/material/{{member}}',
-    },
-    '@mui/icons-material': {
-      transform: '@mui/icons-material/{{member}}',
-    },
-  },
+  transpilePackages: ['@mui/icons-material', '@mui/x-date-pickers', '@devexpress/dx-react-grid-material-ui'],
 };
 
 export default nextConfig;

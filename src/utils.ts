@@ -1,5 +1,5 @@
 import { format, formatDistanceToNowStrict } from 'date-fns';
-import enLocale from 'date-fns/locale/en-GB';
+import { enGB as enLocale } from 'date-fns/locale/en-GB';
 
 /**
  * Returns the elements in a that are not in b
@@ -112,5 +112,5 @@ export const defaultDateDistanceToNow = (date: MaybeDate, ifUndefined='Unknown')
   return formatDistanceToNowStrict(date!, { addSuffix: true });
 };
 
-export const toCdnUrl = <T extends string | undefined>(filename: T): T =>
+export const toCdnUrl = <T extends string | undefined>(filename: T | null): T =>
   typeof filename === 'string' ? <T>`${process.env.NEXT_PUBLIC_FILEHOST_URL}/${filename}` : <T>undefined;

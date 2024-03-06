@@ -1,23 +1,16 @@
-import {
-  IdentifierSqlToken,
-  QueryResult,
-  sql,
-  TaggedTemplateLiteralInvocation
-} from 'slonik';
+import { IdentifierSqlToken, QueryResult, QuerySqlToken, sql as rootSql } from 'slonik';
+import { z } from 'zod';
+import { ColumnFilter, ColumnSort, PlaylistName, VideoRow } from '../../types/types';
 import { pool } from './index';
-import {
-  ColumnFilter,
-  ColumnSort,
-  PlaylistName,
-  VideoRow
-} from '../../types/types';
+
+const sql = rootSql.unsafe;
 
 const comparators = [
   '=', 'ILIKE', 'NOT ILIKE', '<>', '<', '<=', '>', '>=',
   'true', 'false', 'at', 'before', 'after', 'array=', 'arrayLike', 'arrayAny'] as const;
 type Comparator = typeof comparators[number];
 
-type PreProcessor = (value: string | IdentifierSqlToken) => string | TaggedTemplateLiteralInvocation | IdentifierSqlToken;
+type PreProcessor = (value: string | IdentifierSqlToken) => string | QuerySqlToken | IdentifierSqlToken;
 
 const noPreprocess: PreProcessor = (value) => value;
 const dateValueTransform: PreProcessor = (value => sql`${value}::date`);
@@ -25,20 +18,20 @@ const dateColumnTransform: PreProcessor = (col => sql`date_trunc('day', ${col})`
 const lowerCase: PreProcessor = (value => (<string>value).toLowerCase());
 
 const doArrayComparison = (
-  value: string | TaggedTemplateLiteralInvocation | IdentifierSqlToken,
+  value: string | QuerySqlToken | IdentifierSqlToken,
   table: string,
   col: string,
-  comp: TaggedTemplateLiteralInvocation
-): TaggedTemplateLiteralInvocation => {
-  let select: TaggedTemplateLiteralInvocation;
+  comp: QuerySqlToken
+): QuerySqlToken => {
+  let select: QuerySqlToken;
 
   switch (table) {
     case 'tag':
-      select = sql`SELECT videotags.video_id FROM videotags INNER JOIN tags t ON t.id = videotags.tag_id WHERE ${sql.identifier(['t', col])} ${comp} ${value}`;
+      select = sql`SELECT videotags.video_id FROM videotags INNER JOIN tags t ON t.id = videotags.tag_id WHERE ${rootSql.identifier(['t', col])} ${comp} ${value}`;
       break;
 
     case 'playlist':
-      select = sql`SELECT playlistvideos.video_id FROM playlistvideos INNER JOIN playlists p ON p.id = playlistvideos.playlist_id WHERE ${sql.identifier(['p', col])} ${comp} ${value}`;
+      select = sql`SELECT playlistvideos.video_id FROM playlistvideos INNER JOIN playlists p ON p.id = playlistvideos.playlist_id WHERE ${rootSql.identifier(['p', col])} ${comp} ${value}`;
       break;
 
     default:
@@ -64,7 +57,7 @@ const preProcessValue: {[key in Comparator]: PreProcessor} = {
   'after': dateValueTransform,
   'array=': lowerCase,
   'arrayLike': noPreprocess,
-  'arrayAny': (value) => sql`ANY(${sql.array(value.toString().split(','), 'int8')})`
+  'arrayAny': (value) => sql`ANY(${rootSql.array(value.toString().split(','), 'int8')})`
 };
 
 const preProcessColumn: {[key in Comparator]: PreProcessor} = {
@@ -86,7 +79,7 @@ const preProcessColumn: {[key in Comparator]: PreProcessor} = {
   'arrayAny': noPreprocess
 };
 
-const comparatorMapping: {[key in Comparator]: TaggedTemplateLiteralInvocation} = {
+const comparatorMapping: {[key in Comparator]: QuerySqlToken} = {
   '<': sql`<`,
   '<=': sql`<=`,
   '<>': sql`<>`,
@@ -121,13 +114,14 @@ export type TableCols = {
 
 const tableCols: TableCols = {
   channel: ['channel_id', 'name', 'thumbnail'],
-  files: ['thumbnail', 'audio_file', 'subtitles'],
+  files: ['thumbnail', 'audio_file', 'subtitles', 'total_filesize'],
   playlist: ['name', 'playlist_id', 'id'],
   tag: ['tag'],
   video: [
     'id', 'site', 'video_id', 'title', 'description', 'published_at', 'deleted',
     'deleted_at', 'alternative', 'thumbnail', 'download_format',
-    'downloaded_filename', 'downloaded_format', 'download', 'force_redownload'
+    'downloaded_filename', 'downloaded_format', 'download', 'force_redownload',
+    'filesize'
   ]
 };
 
@@ -188,8 +182,8 @@ export const validateColumnFilters = (filters: ColumnFilter[]): boolean => {
   return true;
 };
 
-const generateJoins = (tables: Set<Table>): TaggedTemplateLiteralInvocation => {
-  const joins: TaggedTemplateLiteralInvocation[] = [];
+const generateJoins = (tables: Set<Table>): QuerySqlToken => {
+  const joins: QuerySqlToken[] = [];
   for (let table of tables) {
     switch (table) {
       case 'files':
@@ -228,11 +222,11 @@ const generateJoins = (tables: Set<Table>): TaggedTemplateLiteralInvocation => {
     }
   }
 
-  return sql`${joins.length > 0 ? sql.join(joins, sql`\n`) : sql``}`;
+  return sql`${joins.length > 0 ? rootSql.join(joins, sql`\n`) : sql``}`;
 };
 
-const generateWhere = (where?: ColumnFilter[]): [TaggedTemplateLiteralInvocation, Set<Table>] => {
-  const whereClause: TaggedTemplateLiteralInvocation[] = [];
+const generateWhere = (where?: ColumnFilter[]): [QuerySqlToken, Set<Table>] => {
+  const whereClause: QuerySqlToken[] = [];
   const tables = new Set<Table>();
 
   if (where) {
@@ -240,7 +234,7 @@ const generateWhere = (where?: ColumnFilter[]): [TaggedTemplateLiteralInvocation
       const compString = <Comparator>filter.comp;
 
       const comp = comparatorMapping[compString];
-      const col = preProcessColumn[compString](sql.identifier([filter.table, filter.col]));
+      const col = preProcessColumn[compString](rootSql.identifier([filter.table, filter.col]));
 
       // Arrays have their own special processing
       if (compString.startsWith('array') && arrayAggregated[filter.table]?.has(filter.col)) {
@@ -255,7 +249,7 @@ const generateWhere = (where?: ColumnFilter[]): [TaggedTemplateLiteralInvocation
     }
   }
 
-  return [sql`${whereClause.length > 0 ? sql`WHERE ${sql.join(whereClause, sql` AND `)}` : sql``}`, tables];
+  return [sql`${whereClause.length > 0 ? sql`WHERE ${rootSql.join(whereClause, sql` AND `)}` : sql``}`, tables];
 };
 
 
@@ -267,8 +261,8 @@ type OptionalParams = {
 }
 export const getFullVideos = (select: TableCols, { where, sort, limit, offset } : OptionalParams = {}): Promise<QueryResult<VideoRow>> => {
   limit = limit || 10;
-  const selectedCols: Array<TaggedTemplateLiteralInvocation | IdentifierSqlToken> = [];
-  const orderBy: TaggedTemplateLiteralInvocation[] = [];
+  const selectedCols: Array<QuerySqlToken | IdentifierSqlToken> = [];
+  const orderBy: QuerySqlToken[] = [];
   const tables: Set<Table> = new Set();
 
   // ID should be always selected for default sorting
@@ -282,11 +276,11 @@ export const getFullVideos = (select: TableCols, { where, sort, limit, offset } 
       // Add select
       if (table !== 'video') {
         const combined = `${table}_${col}`;
-        const sqlCol = sql.identifier([table, col]);
-        const colName = sql.identifier([combined]);
+        const sqlCol = rootSql.identifier([table, col]);
+        const colName = rootSql.identifier([combined]);
         selectedCols.push(sql`${sqlCol} as ${colName}`);
       } else {
-        selectedCols.push(sql.identifier([table, col]));
+        selectedCols.push(rootSql.identifier([table, col]));
 
         // Video id contained in select list
         if (col === 'id') idSelected = true;
@@ -300,17 +294,17 @@ export const getFullVideos = (select: TableCols, { where, sort, limit, offset } 
   if (sort) {
     for (let col of sort) {
       orderBy.push(
-        sql`${sql.identifier([col.table, col.col])} ${col.asc !== false ? sql`` : sql`DESC`} NULLS LAST`
+        sql`${rootSql.identifier([col.table, col.col])} ${col.asc !== false ? sql`` : sql`DESC`} NULLS LAST`
       );
     }
   }
 
   if (orderBy.length === 0) {
     if (!idSelected) {
-      selectedCols.push(sql.identifier(['video', 'id']));
+      selectedCols.push(rootSql.identifier(['video', 'id']));
     }
 
-    orderBy.push(sql`${sql.identifier(['video', 'id'])}`);
+    orderBy.push(sql`${rootSql.identifier(['video', 'id'])}`);
   }
 
   if (selectedCols.length === 0) {
@@ -319,23 +313,27 @@ export const getFullVideos = (select: TableCols, { where, sort, limit, offset } 
 
   const joins = generateJoins(tables);
 
-  return pool.query<VideoRow>(sql`
-    SELECT ${sql.join(selectedCols, sql`, `)}
+  return pool.query(rootSql.type(VideoRow)`
+    SELECT ${rootSql.join(selectedCols, sql`, `)}
     FROM videos video
     ${joins}
     ${whereClause}
-    ORDER BY ${sql.join(orderBy, sql`, `)}
+    ORDER BY ${rootSql.join(orderBy, sql`, `)}
     LIMIT ${limit} ${offset ? sql`OFFSET ${offset}` : sql``}
   `);
 };
+
+const countType = z.object({
+  count: z.bigint().transform(Number)
+});
 
 export const getVideoCount = (where?: ColumnFilter[]): Promise<number> => {
   const [whereClause, tables] = generateWhere(where);
   const joins = generateJoins(tables);
 
-  return pool.oneFirst<number>(sql`SELECT COUNT(*) as count FROM videos video ${joins} ${whereClause}`);
+  return pool.oneFirst(rootSql.type(countType)`SELECT COUNT(*) as count FROM videos video ${joins} ${whereClause}`);
 };
 
 export const getPlaylists = (): Promise<readonly PlaylistName[]> => {
-  return pool.many<PlaylistName>(sql`SELECT "name", id FROM playlists`);
+  return pool.many(rootSql.type(PlaylistName)`SELECT "name", id FROM playlists`);
 };
