@@ -1,46 +1,32 @@
-import { useQuery } from 'react-query';
+import { type ReactNode, FC, useCallback } from 'react';
 import { Autocomplete, TextField } from '@mui/material';
-import { getPlaylists } from '../../api/search';
-import React, { FunctionComponent } from 'react';
-import {
-  DataTypeProvider,
-  DataTypeProviderProps
-} from '@devexpress/dx-react-grid';
-import { FilterOperation } from '../../utils';
-import { ArrayFormatter } from './array';
+import { useQuery } from '@tanstack/react-query';
 
-export const arrayFilters: FilterOperation[] = [
-  'arrayAny',
-];
+import { getPlaylistsQueryOptions } from '@/api/search';
+import { PlaylistName } from '@/types/types';
 
-export const PlaylistAutocomplete: FunctionComponent<DataTypeProvider.ValueEditorProps>  = ({ onValueChange }:  DataTypeProvider.ValueEditorProps) => {
-  const { isFetching, data } = useQuery(['playlists'], () => getPlaylists(), {
-    keepPreviousData: true,
-    staleTime: Infinity,
-    retry: false,
-    placeholderData: []
-  });
+import { noRows } from './constants';
+import type { FilterProps } from './types';
+
+
+const getOptionLabel = (option: PlaylistName) => option.name;
+
+export const PlaylistFilter: FC<FilterProps> = ({ column }): ReactNode => {
+  const { data: playlists } = useQuery(getPlaylistsQueryOptions);
+
+  const handleChange = useCallback((_: unknown, value: PlaylistName[] | null) => {
+    column.setFilterValue(value?.map(p => p.id));
+  }, [column]);
 
   return (
     <Autocomplete
-      renderInput={(params) => <TextField {...params} />}
-      getOptionLabel={opt => opt.name}
-      options={data || []}
-      onChange={(e, value) => onValueChange(value)}
-      loading={isFetching}
+      renderInput={params => <TextField {...params} variant='standard' />}
+      getOptionLabel={getOptionLabel}
+      options={playlists ?? noRows}
+      onChange={handleChange}
       limitTags={3}
       multiple
       fullWidth
     />
   );
 };
-
-export const PlaylistNameProvider: FunctionComponent<DataTypeProviderProps> = (props: DataTypeProviderProps) => (
-  <DataTypeProvider
-    availableFilterOperations={arrayFilters}
-    editorComponent={PlaylistAutocomplete}
-    formatterComponent={ArrayFormatter}
-    {...props}
-  />
-);
-

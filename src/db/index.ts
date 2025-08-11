@@ -1,7 +1,17 @@
 import { QueryResultRow } from 'pg';
-import { createPool, Interceptor, SchemaValidationError } from 'slonik';
-import { createFieldNameTransformationInterceptor } from 'slonik-interceptor-field-name-transformation';
-import { createQueryLoggingInterceptor } from 'slonik-interceptor-query-logging';
+import {
+  createPool,
+  createSqlTag,
+  Interceptor,
+  SchemaValidationError,
+} from 'slonik';
+import {
+  createFieldNameTransformationInterceptor,
+} from 'slonik-interceptor-field-name-transformation';
+import {
+  createQueryLoggingInterceptor,
+} from 'slonik-interceptor-query-logging';
+import { z } from 'zod';
 
 if (!process.env.DATABASE_URL) {
   throw new Error('Missing DATABASE_URL');
@@ -9,31 +19,26 @@ if (!process.env.DATABASE_URL) {
 
 const createResultParserInterceptor = (): Interceptor => {
   return {
-    // If you are not going to transform results using Zod, then you should use `afterQueryExecution` instead.
-    // Future versions of Zod will provide a more efficient parser when parsing without transformations.
-    // You can even combine the two – use `afterQueryExecution` to validate results, and (conditionally)
-    // transform results as needed in `transformRow`.
-    transformRow: (executionContext, actualQuery, row) => {
-      const {
-        log,
-        resultParser,
-      } = executionContext;
+    name: 'result-parser',
+    // Without this interceptor, the zod models are not used to validate or transform the result.
+    transformRowAsync: async (executionContext, actualQuery, row) => {
+      const { resultParser } = executionContext;
 
       if (!resultParser) {
         return row;
       }
 
-      const validationResult = resultParser.safeParse(row);
+      const validationResult = await resultParser['~standard'].validate(row);
 
-      if (!validationResult.success) {
+      if (validationResult.issues) {
         throw new SchemaValidationError(
           actualQuery,
           row,
-          validationResult.error.issues,
+          validationResult.issues
         );
       }
 
-      return validationResult.data as QueryResultRow;
+      return validationResult.value as QueryResultRow;
     },
   };
 };
@@ -41,7 +46,7 @@ const createResultParserInterceptor = (): Interceptor => {
 const interceptors = [
   createQueryLoggingInterceptor(),
   createFieldNameTransformationInterceptor({
-    format: 'CAMEL_CASE'
+    test: () => true, // Apply to all fields
   }),
   createResultParserInterceptor(),
 ];
@@ -50,3 +55,12 @@ export const pool = await createPool(process.env.DATABASE_URL, {
   interceptors,
 });
 console.log('DATABASE CREATED');
+
+export const sql = createSqlTag({
+  typeAliases: {
+    void: z.strictObject({}),
+    count: z.object({
+      count: z.bigint().transform(Number),
+    }),
+  },
+});

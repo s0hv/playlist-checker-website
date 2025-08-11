@@ -1,16 +1,18 @@
-import { css } from '@emotion/react';
+import { FC } from 'react';
+import { Box } from '@mui/material';
+import type { MRT_Row } from 'material-react-table';
 import Image from 'next/image';
-import { FunctionComponent } from 'react';
-import { type VideoRow } from '../../../types/types';
-import { toCdnUrl } from '../../utils';
+
+import { toCdnUrl } from '@/src/utils';
+import { type VideoRow } from '@/types/types';
 
 const embedSize = {
   w: 720,
-  h: 480
+  h: 480,
 };
 
 type YouTubeProps = { videoId?: string };
-const YouTube: FunctionComponent<YouTubeProps> = ({ videoId }: YouTubeProps) => (
+const YouTube: FC<YouTubeProps> = ({ videoId }: YouTubeProps) => (
   <iframe
     width='100%'
     height='100%'
@@ -21,13 +23,13 @@ const YouTube: FunctionComponent<YouTubeProps> = ({ videoId }: YouTubeProps) => 
 );
 
 type VideoProps = { filename?: string | null, thumbnail?: string | null };
-const VideoContainer: FunctionComponent<VideoProps> = ({ filename, thumbnail }: VideoProps) => {
+const VideoContainer: FC<VideoProps> = ({ filename, thumbnail }: VideoProps) => {
   if (!filename) {
     const biggest = Math.max(embedSize.w, embedSize.h);
     if (thumbnail) return (
       <Image
         src={toCdnUrl(thumbnail)}
-        alt="Video thumbnail"
+        alt='Video thumbnail'
         width={biggest}
         height={biggest}
         objectFit='contain'
@@ -44,36 +46,54 @@ const VideoContainer: FunctionComponent<VideoProps> = ({ filename, thumbnail }: 
       height={embedSize.h}
       poster={toCdnUrl(thumbnail)}
     >
-      <source src={toCdnUrl(filename)} type='video/x-matroska'/>
-      <source src={toCdnUrl(filename)} type='video/webm'/>
-      <source src={toCdnUrl(filename)} type='video/mp4'/>
+      <source src={toCdnUrl(filename)} type='video/x-matroska' />
+      <source src={toCdnUrl(filename)} type='video/webm' />
+      <source src={toCdnUrl(filename)} type='video/mp4' />
     </video>
   );
 };
 
-
-export const RowDetail = ({ row }: { row: VideoRow }) => (
-  <pre css={css`font-family: inherit;`}>
-    <div css={css`
-      display: flex;
-      resize: both;
-      overflow: auto;
-      ${/* Default size of the iframe should be 480p. Controlling the size is pretty much impossible any other way. */''}
-      ${row.deleted ? '' : 'width: 720px; height: 480px;'}
-    `}>
-      {row.deleted ? <VideoContainer filename={row.downloadedFilename} thumbnail={row.filesThumbnail} /> : <YouTube videoId={row.videoId} />}
-    </div>
-    <br/>
+type RowDetailProps = { row: VideoRow };
+export const RowDetail: FC<RowDetailProps> = ({ row }: RowDetailProps) => (
+  <Box component='pre' sx={{ fontFamily: 'inherit' }}>
+    <Box sx={{
+      display: 'flex',
+      resize: 'both',
+      overflow: 'auto',
+      // The default size of the iframe should be 480p. Controlling the size is pretty much impossible any other way.
+      ...(!row.deleted
+        ? { width: '720px', height: '720px' }
+        : undefined),
+    }}
+    >
+      {row.deleted
+        ? <VideoContainer filename={row.downloadedFilename} thumbnail={row.filesThumbnail} />
+        : <YouTube videoId={row.videoId} />}
+    </Box>
+    <br />
     {row.alternative && (
       <>
         <div>
           Alternative: {row.alternative}
         </div>
-        <br/>
+        <br />
       </>
     )}
-    Search title from YouTube: <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(row.title || '')}`} target='_blank' rel='noopener noreferrer'>{row.title}</a>
-    <br/><br/>
+    Search title from YouTube:
+    {' '}
+    <a
+      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(row.title || '')}`}
+      target='_blank'
+      rel='noopener noreferrer'
+    >
+      {row.title}
+    </a>
+    <br />
+    <br />
     {row.description}
-  </pre>
+  </Box>
+);
+
+export const renderDetailRow = ({ row }: { row: MRT_Row<VideoRow> }) => (
+  <RowDetail row={row.original} />
 );

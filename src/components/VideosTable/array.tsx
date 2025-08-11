@@ -1,69 +1,93 @@
-import {
-  DataTypeProvider,
-  DataTypeProviderProps,
-  TableFilterRow as TableFilterRowBase,
-} from '@devexpress/dx-react-grid';
-import React, { FunctionComponent } from 'react';
-import Accordion from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import { FilterOperation } from '../../utils';
-import { TableFilterRow } from '@devexpress/dx-react-grid-material-ui';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { List, ListItem, ListItemText, Typography } from '@mui/material';
+import {
+  accordionSummaryClasses,
+  List,
+  ListItem,
+  ListItemText,
+  MenuItem,
+  Typography,
+} from '@mui/material';
+import Accordion from '@mui/material/Accordion';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import AccordionSummary from '@mui/material/AccordionSummary';
 
-export const arrayFilters: FilterOperation[] = [
+import {
+  type RenderFilterModeMenuItems,
+  type VideoTableColumnDef,
+  ArrayFilterOption,
+  CellComponent,
+  FilterFns,
+} from './types';
+import { getFilterLocalizations, getFilterMethods } from './utils';
+
+export const arrayFilterMessages: Record<ArrayFilterOption, string> = {
+  arrayEqual: 'Array equals',
+  arrayContains: 'Array contains',
+  arrayStartswith: 'Array starts with',
+};
+
+export const arrayFilterLocalization = getFilterLocalizations(arrayFilterMessages);
+
+export const arrayFilterMethods: FilterFns<ArrayFilterOption> = getFilterMethods(arrayFilterMessages);
+
+export const arrayFilterOptions: ArrayFilterOption[] = [
   'arrayEqual',
   'arrayContains',
-  'arrayStartswith'
+  'arrayStartswith',
 ];
 
-const iconProxy = (type: string): FunctionComponent<TableFilterRowBase.IconProps> => {
-  // eslint-disable-next-line react/display-name
-  return ({type: _, ...restProps}: TableFilterRowBase.IconProps) =>
-    <TableFilterRow.Icon type={type} {...restProps}/>;
-};
+export const renderArrayFilterModeMenuItems: RenderFilterModeMenuItems = ({ onSelectFilterMode }) => arrayFilterOptions.map(filterOption => (
+  <MenuItem
+    key={filterOption}
+    onClick={() => onSelectFilterMode(filterOption)}
+    sx={{ display: 'flex', gap: 1 }}
+  >
+    {arrayFilterMessages[filterOption]}
+  </MenuItem>
+));
 
-export const arrayFilterMessages: { [key: string]: string } = {
-  arrayEqual: 'arrayEqual',
-  arrayContains: 'arrayContains',
-  arrayStartswith: 'arrayStartswith'
-};
-export const arrayFilterIcons: { [key: string]: FunctionComponent<any> } = {
-  arrayEqual: iconProxy('equal'),
-  arrayContains: iconProxy('contains'),
-  arrayStartswith: iconProxy('startsWith')
-};
 
-export const ArrayFormatter: FunctionComponent<DataTypeProvider.ValueFormatterProps> = ({ value }: DataTypeProvider.ValueFormatterProps) => {
-  if (!value || !Array.isArray(value)) return <Typography>No items</Typography>;
+export const ArrayCell: CellComponent<unknown[] | unknown> = ({ cell }) => {
+  const value = cell.getValue();
+
+  if (!value || !Array.isArray(value)) {
+    return <Typography>No items</Typography>;
+  }
 
   return (
-    <Accordion sx={{  overflowX: 'clip' }} TransitionProps={{ unmountOnExit: true }}>
+    <Accordion
+      slotProps={{
+        transition: { unmountOnExit: true },
+      }}
+      sx={{ overflowX: 'clip' }}
+    >
       <AccordionSummary
         expandIcon={<ChevronRightIcon />}
         sx={{
           display: 'flex',
           justifyContent: 'flex-start',
-          '& .MuiAccordionSummary-expandIconWrapper.Mui-expanded': {
+          [`& .${accordionSummaryClasses.expandIconWrapper}.Mui-expanded`]: {
             transform: 'rotate(90deg)',
           },
-          '& .MuiAccordionSummary-content, & .MuiAccordionSummary-content.Mui-expanded': {
+          [`& .${accordionSummaryClasses.content}, & .${accordionSummaryClasses.content}.Mui-expanded`]: {
             marginLeft: 1,
           },
-          '& .MuiAccordionSummary-expandIconWrapper': {
+          [`& .${accordionSummaryClasses.expandIconWrapper}`]: {
             position: 'absolute',
-            left: '0px'
-          }
-      }}
+            left: '0px',
+          },
+          whiteSpace: 'nowrap',
+          maxWidth: '100%',
+        }}
       >
         {value.slice(0, 5).join(', ').toString()}{value.length > 5 ? ', ...' : ''}
       </AccordionSummary>
       <AccordionDetails sx={{
         height: 'max-content',
         overflowY: 'auto',
-        maxHeight: 200
-      }}>
+        maxHeight: 200,
+      }}
+      >
         <List>
           {value.map(item => (
             <ListItem key={item} disablePadding>
@@ -76,10 +100,9 @@ export const ArrayFormatter: FunctionComponent<DataTypeProvider.ValueFormatterPr
   );
 };
 
-export const ArrayTypeProvider: FunctionComponent<DataTypeProviderProps> = (props: DataTypeProviderProps) => (
-  <DataTypeProvider
-    availableFilterOperations={arrayFilters}
-    formatterComponent={ArrayFormatter}
-    {...props}
-  />
-);
+export const arrayColumnDef: Partial<VideoTableColumnDef> = {
+  Cell: ArrayCell,
+  filterVariant: 'text',
+  renderColumnFilterModeMenuItems: renderArrayFilterModeMenuItems,
+  filterFn: 'arrayContains',
+};

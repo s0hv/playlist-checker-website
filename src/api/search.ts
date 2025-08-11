@@ -1,18 +1,17 @@
-import { HttpForbidden } from './videos';
-import { PlaylistName } from '../../types/types';
+import { queryOptions } from '@tanstack/react-query';
+import ky from 'ky';
 
-const handleResponse = (res: Response): Response => {
-  if (!res.ok) {
-    throw new HttpForbidden('');
-  }
-
-  return res;
-};
+import { PlaylistName } from '@/types/types';
 
 
 export const getPlaylists = (): Promise<PlaylistName[]> => {
-  return fetch('/api/playlists', { method: 'GET' })
-    .then(handleResponse)
-    .then(res => res.json())
+  return ky.get('/api/playlists')
+    .json<{ rows: PlaylistName[] }>()
     .then(json => json.rows);
 };
+
+export const getPlaylistsQueryOptions = queryOptions({
+  queryKey: ['/api/playlists'] as const,
+  queryFn: getPlaylists,
+  refetchOnMount: false,
+});

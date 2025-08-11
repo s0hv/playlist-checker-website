@@ -1,31 +1,6 @@
-import { Column, Filter, TableColumnWidthInfo } from '@devexpress/dx-react-grid';
+import { ColumnSort, SortingState } from '@tanstack/table-core';
 
-export const columns: Column[] = [
-  { name: 'id', title: 'ID' },
-  { name: 'videoId', title: 'Video id' },
-  { name: 'title', title: 'Title' },
-  { name: 'publishedAt', title: 'Published at' },
-  { name: 'deleted', title: 'Deleted' },
-  { name: 'deletedAt', title: 'Deleted at' },
-  { name: 'download', title: 'Download' },
-  { name: 'downloadFormat', title: 'Download format' },
-  { name: 'downloadedFilename', title: 'Filename' },
-  { name: 'downloadedFormat', title: 'Downloaded format' },
-  { name: 'forceRedownload', title: 'Force redownload' },
-  { name: 'filesize', title: 'Filesize' },
-
-  { name: 'channelChannelId', title: 'Channel id' },
-  { name: 'channelName', title: 'Channel name' },
-
-  { name: 'filesTotalFilesize', title: 'Filesize of extras' },
-  { name: 'filesSubtitles', title: 'Subtitle files' },
-  { name: 'filesAudioFile', title: 'Audio filename' },
-
-  { name: 'playlistName', title: 'Playlists' },
-  { name: 'playlistPlaylistId', title: 'Playlist ids' },
-
-  { name: 'tagTag', title: 'Tags' }
-] satisfies { name: ColumnName, title: string  }[];
+import { VideoTableColumnDef } from './types';
 
 export const columnToTableCol = {
   id: ['video', 'id'],
@@ -63,64 +38,93 @@ export const columnToTableCol = {
 
 export type ColumnName = keyof typeof columnToTableCol;
 
-export const allCols = new Set(Object.keys(columnToTableCol));
+export const stringColumnDef: Partial<VideoTableColumnDef> = {
+  filterFn: 'contains',
+  enableResizing: true,
+  columnFilterModeOptions: [
+    'contains',
+    'startsWith',
+    'endsWith',
+    'equals',
+    'notEquals',
+    'notEmpty',
+    'empty',
+  ],
+};
 
-export const integerColumns: ColumnName[] = ['id'];
-export const arrayColumns: ColumnName[] = [
-  'tagTag', 'playlistPlaylistId', 'filesSubtitles'
-];
-export const boolColumns: ColumnName[] = [
-  'deleted',
-  'forceRedownload',
-  'download'
-];
-export const dateColumns: ColumnName[] = [
-  'publishedAt',
-  'deletedAt'
-];
-export const stringIdColumns: ColumnName[] = [
+export const stringIdColumnDef: Partial<VideoTableColumnDef> = {
+  filterFn: 'equals',
+  columnFilterModeOptions: ['equals', 'notEquals'],
+};
+
+export const allColumnNames = new Set<ColumnName>(Object.keys(columnToTableCol) as ColumnName[]);
+
+export const defaultColumnSizing: Readonly<Partial<Record<ColumnName, number>>> = {
+  id: 100,
+  videoId: 150,
+  title: 500,
+  publishedAt: 270,
+  deleted: 100,
+  deletedAt: 270,
+  alternative: 300,
+  thumbnail: 300,
+  download: 100,
+  downloadFormat: 300,
+  downloadedFormat: 300,
+  downloadedFilename: 300,
+  forceRedownload: 100,
+  filesize: 150,
+  channelChannelId: 300,
+  channelName: 200,
+  channelThumbnail: 200,
+  filesTotalFilesize: 180,
+  filesSubtitles: 300,
+  filesAudioFile: 300,
+  playlistName: 300,
+  playlistPlaylistId: 300,
+  tagTag: 250,
+};
+
+export type VideoColumnSort = ColumnSort & {
+  id: ColumnName
+};
+export const defaultSorting: SortingState = [
+  {
+    id: 'id',
+    desc: true,
+  },
+] satisfies VideoColumnSort[];
+
+export const defaultVisibleCols: Set<ColumnName> = new Set([
+  'id',
   'videoId',
-  'channelChannelId'
-];
-export const bytesColumns: ColumnName[] = [
-  'filesize',
-  'filesTotalFilesize'
-];
+  'title',
+  'publishedAt',
+  'deleted',
+  'deletedAt',
+  'downloadedFilename',
+  'downloadedFormat',
+  'download',
+]);
 
-type ColumnWidth = TableColumnWidthInfo & { columnName: ColumnName };
-export const defaultColumnWidths: Readonly<ColumnWidth[]> = [
-  {columnName: 'id', width: 100},
-  {columnName: 'videoId', width: 150},
-  {columnName: 'title', width: 500},
-  {columnName: 'publishedAt', width: 270},
-  {columnName: 'deleted', width: 100},
-  {columnName: 'deletedAt', width: 270},
-  {columnName: 'alternative', width: 300},
-  {columnName: 'thumbnail', width: 300},
-  {columnName: 'download', width: 100},
-  {columnName: 'downloadFormat', width: 300},
-  {columnName: 'downloadedFormat', width: 300},
-  {columnName: 'downloadedFilename', width: 300},
-  {columnName: 'forceRedownload', width: 100},
-  {columnName: 'filesize', width: 150},
+export const selectExcludedCols: Set<ColumnName> = new Set([
+  'playlistId',
+]);
 
-  {columnName: 'channelChannelId', width: 300},
-  {columnName: 'channelName', width: 200},
-  {columnName: 'channelThumbnail', width: 200},
+export const defaultHiddenCols: Set<ColumnName> = allColumnNames.difference(defaultVisibleCols);
 
-  {columnName: 'filesTotalFilesize', width: 180},
-  {columnName: 'filesSubtitles', width: 300},
-  {columnName: 'filesAudioFile', width: 300},
-
-  {columnName: 'playlistName', width: 300},
-  {columnName: 'playlistPlaylistId', width: 300},
-
-  {columnName: 'tagTag', width: 250},
+export const rowDetailCols: Readonly<ColumnName[]> = [
+  'id',
+  'site',
+  'title',
+  'thumbnail',
+  'description',
+  'downloadedFilename',
+  'videoId',
+  'filesThumbnail',
+  'alternative',
+  'deleted',
+  'filesSubtitles',
+  'filesAudioFile',
 ] as const;
 
-export const defaultFilters: Filter[] = boolColumns.map(columnName => (
-  {
-    columnName,
-    value: ' ',
-    operation: 'noFilter'
-}));
