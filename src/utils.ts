@@ -1,13 +1,15 @@
 import { format, formatDistanceToNowStrict } from 'date-fns';
 import { enGB as enLocale } from 'date-fns/locale/en-GB';
 
+import { FilterType } from '@/components/VideosTable/types';
+
 /**
  * Returns the elements in a that are not in b
  */
 export const difference = <T>(a: Set<T> | T[], b: Set<T>): T[] => {
   const diff: T[] = [];
 
-  for (let el of a) {
+  for (const el of a) {
     if (!b.has(el)) diff.push(el);
   }
 
@@ -19,7 +21,7 @@ export const none = () => null;
 export const union = <T>(a: Readonly<Set<T> | T[]>, b: Readonly<Set<T> | T[]>): Set<T> => {
   const u: Set<T> = new Set<T>(b);
 
-  for (let el of a) {
+  for (const el of a) {
     u.add(el);
   }
 
@@ -31,57 +33,46 @@ export const filterOperations = {
   notContains: 'NOT ILIKE',
   startsWith: 'ILIKE',
   endsWith: 'ILIKE',
-  equal: '=',
-  notEqual: '<>',
+  equals: '=',
+  notEquals: '<>',
   greaterThan: '>',
   greaterThanOrEqual: '>=',
   lessThan: '<',
   lessThanOrEqual: '<=',
   true: 'true',
   false: 'false',
-  noFilter: '',
+  noFilter: null,
   at: 'at',
   before: 'before',
   after: 'before',
   arrayEqual: 'array=',
   arrayContains: 'arrayLike',
   arrayStartswith: 'arrayLike',
-  arrayAny: 'arrayAny'
-} as const;
+  arrayAny: 'arrayAny',
+  between: 'between',
+  betweenInclusive: 'betweenInclusive',
+} as const satisfies Partial<Record<FilterType, string | null>>;
 export type FilterOperation = keyof typeof filterOperations;
 
-export const integerFilters: FilterOperation[] = [
-  'equal',
-  'notEqual',
-  'greaterThan',
-  'greaterThanOrEqual',
-  'lessThan',
-  'lessThanOrEqual'
-];
+export const escapePercentage = (s: string): string => s.replace(/%/g, '%');
 
-export const stringIdFilters: FilterOperation[] = [
-  'equal',
-  'notEqual'
-];
+const noTransformation = <T>(s: T) => s;
+const noValueTransform = (_: unknown) => '';
 
-export const escapePercentage = (s: string): string => s.replace(/%/g, '\%');
-
-const noTransformation = (s: any) => s;
-
-export const filterValueTransformations: {[key in FilterOperation]: (s: string) => string} = {
+export const filterValueTransformations: Record<FilterOperation, (s: string) => string> = {
   contains: (s: string) => `%${escapePercentage(s)}%`,
   notContains: (s: string) => `%${escapePercentage(s)}%`,
   startsWith: (s: string) => `%${escapePercentage(s)}`,
   endsWith: (s: string) => `${escapePercentage(s)}%`,
-  equal: noTransformation,
-  notEqual: noTransformation,
+  equals: noTransformation,
+  notEquals: noTransformation,
   greaterThan: noTransformation,
   greaterThanOrEqual: noTransformation,
   lessThan: noTransformation,
   lessThanOrEqual: noTransformation,
-  true: noTransformation,
-  false: noTransformation,
-  noFilter: noTransformation,
+  true: noValueTransform,
+  false: noValueTransform,
+  noFilter: noValueTransform,
   at: noTransformation,
   before: noTransformation,
   after: noTransformation,
@@ -89,24 +80,26 @@ export const filterValueTransformations: {[key in FilterOperation]: (s: string) 
   arrayContains: (s: string) => `%${escapePercentage(s)}%`,
   arrayStartswith: (s: string) => `${escapePercentage(s)}%`,
   arrayAny: noTransformation,
+  between: noTransformation,
+  betweenInclusive: noTransformation,
 } as const;
 
 type MaybeDate = Date | undefined | null | number;
 
 function dateIsInvalid(date: MaybeDate): boolean {
   if (!date) return true;
-  return typeof date === 'number' ?
-    Number.isNaN(date) :
-    Number.isNaN(date.getTime()) || date.getTime() === 0;
+  return typeof date === 'number'
+    ? Number.isNaN(date)
+    : Number.isNaN(date.getTime()) || date.getTime() === 0;
 }
 
-export const defaultDateFormat = (date: MaybeDate, ifUndefined='Unknown') => {
+export const defaultDateFormat = (date: MaybeDate, ifUndefined = 'Unknown') => {
   if (dateIsInvalid(date)) return ifUndefined;
 
   return format(date!, 'MMM do yyyy, HH:mm', { locale: enLocale });
 };
 
-export const defaultDateDistanceToNow = (date: MaybeDate, ifUndefined='Unknown') => {
+export const defaultDateDistanceToNow = (date: MaybeDate, ifUndefined = 'Unknown') => {
   if (dateIsInvalid(date)) return ifUndefined;
 
   return formatDistanceToNowStrict(date!, { addSuffix: true });

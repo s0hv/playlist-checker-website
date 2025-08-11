@@ -31,7 +31,6 @@ export const VideoRow = z.object({
 
   tagTag: z.array(z.string()).nullish(),
 });
-
 export type VideoRow = z.infer<typeof VideoRow>;
 
 export interface ColumnSort {
@@ -40,15 +39,15 @@ export interface ColumnSort {
   asc?: boolean
 }
 
-export interface ColumnFilter {
+export interface ApiColumnFilter {
   col: string
   table: string
-  value: string
+  value: string | string[] | number
   comp: string
 }
 
 export const PlaylistName = z.object({
   name: z.string(),
-  id: z.bigint().transform(Number)
+  id: z.bigint().transform(Number),
 });
 export type PlaylistName = z.infer<typeof PlaylistName>;

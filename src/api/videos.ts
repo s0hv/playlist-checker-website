@@ -1,16 +1,25 @@
-import { ColumnFilter, ColumnSort, VideoRow } from '../../types/types';
-import qs from 'qs';
+import { queryOptions } from '@tanstack/react-query';
+import ky from 'ky';
+
+import { PaginationState } from '@/components/VideosTable/types';
+import { ApiColumnFilter, ColumnSort, VideoRow } from '@/types/types';
+
+export type VideoSelect = Record<string, string[]>;
+export type VideoSort = ColumnSort[];
+export type VideoWhere = ApiColumnFilter[];
 
 export interface GetVideoQuery {
-  select: { [key: string]: string[] }
-  sort?: ColumnSort[]
-  where?: ColumnFilter[]
+  select: VideoSelect
+  sort?: VideoSort
+  where?: VideoWhere
   limit?: number
   offset?: number
 }
 
+
 export interface VideoRows {
   rows: VideoRow[]
+  count: number
 }
 
 export class HttpForbidden extends Error {
@@ -18,22 +27,32 @@ export class HttpForbidden extends Error {
 }
 
 export const getVideos = (query: GetVideoQuery): Promise<VideoRows> => {
-  const queryString = qs.stringify(query, { encodeValuesOnly: true });
+  const {
+    select,
+    where,
+    sort,
+    ...searchParams
+  } = query;
 
-  return fetch(`/api/videos?${queryString}`, { method: 'GET' })
-    .then(res => res.json());
+  return ky.post<VideoRows>('/api/videos', {
+    json: {
+      select,
+      where,
+      sort,
+    },
+    searchParams: searchParams,
+  })
+    .json();
 };
 
-export const getVideoCount = (where?: ColumnFilter[]): Promise<number> => {
-  const queryString = qs.stringify({ where }, { encodeValuesOnly: true, addQueryPrefix: true });
-
-  return fetch(`/api/videos/count${queryString}`, { method: 'GET' })
-    .then(res => {
-      if (!res.ok) {
-        throw new HttpForbidden('');
-      }
-
-      return res.json();
-    })
-    .then(json => json.count);
-};
+export const videosQueryOptions = (
+  query: GetVideoQuery,
+  pagination: PaginationState
+) => queryOptions({
+  queryKey: ['/api/videos', query, pagination] as const,
+  queryFn: ({ queryKey: [_, q, p] }) => getVideos({
+    ...q,
+    limit: p.pageSize,
+    offset: p.pageIndex * p.pageSize,
+  }),
+});
