@@ -164,7 +164,6 @@ export const VideosTable = () => {
   useEffect(() => {
     if (!localStorageFullyLoaded) return;
 
-    console.log('Column visibility: ', columnVisibility);
     saveColumnVisibility(columnVisibility);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [columnVisibility]);
@@ -172,7 +171,6 @@ export const VideosTable = () => {
   useEffect(() => {
     if (!localStorageFullyLoaded) return;
 
-    console.log('Column order: ', columnOrder);
     saveColumnOrder(columnOrder);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [columnOrder]);
