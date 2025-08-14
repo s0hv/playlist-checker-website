@@ -100,6 +100,7 @@ export const VideosTable = () => {
     isLoading,
   } = useQuery({
     ...videosQueryOptions({ select, where, sort }, pagination),
+    enabled: localStorageFullyLoaded,
   });
 
   useEffect(() => {

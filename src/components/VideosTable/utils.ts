@@ -23,7 +23,7 @@ import {
   allColumnNames,
   ColumnName,
   columnToTableCol,
-  defaultHiddenCols,
+  defaultHiddenCols, rowDetailCols,
   selectExcludedCols,
 } from './columnInfos';
 import { localStorageKeys } from './constants';
@@ -176,15 +176,18 @@ export const saveColumnOrder = (columnOrder: ColumnOrderState): void => {
 export const colsToSelectQuery = (cols: ColumnName[] | Set<ColumnName>, excludeColumns: Set<ColumnName>): VideoSelect => {
   const select: VideoSelect = {};
 
-  for (const col of cols) {
+  const processColumn = (col: ColumnName, noExclude: boolean) => {
     // Some columns are always excluded from the select query
-    if (selectExcludedCols.has(col) || excludeColumns.has(col)) continue;
+    if (noExclude && (selectExcludedCols.has(col) || excludeColumns.has(col))) return;
 
     const [table, actualCol] = columnToTableCol[col as ColumnName];
     if (!select[table]) select[table] = [];
 
     select[table].push(actualCol);
-  }
+  };
+
+  cols.forEach(col => processColumn(col, true));
+  rowDetailCols.forEach(col => processColumn(col, false));
 
   return select;
 };

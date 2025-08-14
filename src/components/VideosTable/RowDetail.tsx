@@ -32,7 +32,7 @@ const VideoContainer: FC<VideoProps> = ({ filename, thumbnail }: VideoProps) => 
         alt='Video thumbnail'
         width={biggest}
         height={biggest}
-        objectFit='contain'
+        style={{ objectFit: 'contain' }}
       />
     );
 
