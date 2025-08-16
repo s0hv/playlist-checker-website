@@ -59,7 +59,7 @@ export const ArrayCell: CellComponent<unknown[] | unknown> = ({ cell }) => {
       slotProps={{
         transition: { unmountOnExit: true },
       }}
-      sx={{ overflowX: 'clip' }}
+      sx={{ overflowX: 'clip', width: '100%' }}
     >
       <AccordionSummary
         expandIcon={<ChevronRightIcon />}
@@ -85,12 +85,18 @@ export const ArrayCell: CellComponent<unknown[] | unknown> = ({ cell }) => {
       <AccordionDetails sx={{
         height: 'max-content',
         overflowY: 'auto',
+        overflowX: 'auto',
+        whiteSpace: 'nowrap',
         maxHeight: 200,
       }}
       >
         <List>
           {value.map(item => (
-            <ListItem key={item} disablePadding>
+            <ListItem
+              key={item}
+              disablePadding
+              sx={{ width: 'max-content', pr: 2 }}
+            >
               <ListItemText>{item}</ListItemText>
             </ListItem>
           ))}

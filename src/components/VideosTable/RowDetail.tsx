@@ -62,7 +62,7 @@ export const RowDetail: FC<RowDetailProps> = ({ row }: RowDetailProps) => (
       overflow: 'auto',
       // The default size of the iframe should be 480p. Controlling the size is pretty much impossible any other way.
       ...(!row.deleted
-        ? { width: '720px', height: '720px' }
+        ? { width: '720px', height: '480px' }
         : undefined),
     }}
     >

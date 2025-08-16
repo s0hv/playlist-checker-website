@@ -183,7 +183,7 @@ export const VideosTable = () => {
 
     // Table options
     columnResizeMode: 'onChange',
-    layoutMode: 'semantic',
+    layoutMode: 'grid-no-grow',
     localization,
     filterFns,
 

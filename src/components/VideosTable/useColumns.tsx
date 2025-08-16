@@ -106,6 +106,7 @@ export const useColumns = (): VideoTableColumnDef[] => {
     {
       header: 'Subtitle files',
       accessorKey: 'filesSubtitles',
+      ...arrayColumnDef,
     },
 
     {
