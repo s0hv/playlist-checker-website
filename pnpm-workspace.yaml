@@ -1,4 +1,8 @@
-onlyBuiltDependencies:
-  - 'sharp'
 ignoredBuiltDependencies:
-  - 'urns-resolver'
+  - urns-resolver
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - esbuild
+  - protobufjs
+  - sharp

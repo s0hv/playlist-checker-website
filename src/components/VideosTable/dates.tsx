@@ -24,7 +24,7 @@ import type {
   DateFilterOption,
   FilterFns,
   FilterProps,
-  VideoTableColumnDef,
+  VideoTableColumnDefTyped,
 } from './types';
 import { getFilterLocalizations, getFilterMethods } from './utils';
 
@@ -65,8 +65,8 @@ export const renderDateFilterModeMenuItems = (onSelectFilterMode: (filter: DateF
 /**
  * DateCell component for displaying date values in a table cell.
  */
-export const DateCell: CellComponent<Date | unknown> = ({ cell }) => {
-  const value = cell.getValue<Date>();
+export const DateCell: CellComponent<Date> = ({ cell }) => {
+  const value = cell.getValue();
 
   return useMemo(() =>
     value
@@ -75,7 +75,7 @@ export const DateCell: CellComponent<Date | unknown> = ({ cell }) => {
   [value]);
 };
 
-export const DateFilter: FC<FilterProps> = props => {
+export const DateFilter: FC<FilterProps<Date>> = props => {
   const { column, table } = props;
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -138,7 +138,7 @@ export const DateFilter: FC<FilterProps> = props => {
   );
 };
 
-export const dateColumnDef: Partial<VideoTableColumnDef> = {
+export const dateColumnDef: Partial<VideoTableColumnDefTyped<Date>> = {
   Cell: DateCell,
   filterFn: 'at',
   Filter: props => <DateFilter {...props} />,

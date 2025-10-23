@@ -1,7 +1,6 @@
 import { FC } from 'react';
 import { Box } from '@mui/material';
 import type { MRT_Row } from 'material-react-table';
-import Image from 'next/image';
 
 import { toCdnUrl } from '@/src/utils';
 import { type VideoRow } from '@/types/types';
@@ -25,14 +24,15 @@ const YouTube: FC<YouTubeProps> = ({ videoId }: YouTubeProps) => (
 type VideoProps = { filename?: string | null, thumbnail?: string | null };
 const VideoContainer: FC<VideoProps> = ({ filename, thumbnail }: VideoProps) => {
   if (!filename) {
-    const biggest = Math.max(embedSize.w, embedSize.h);
     if (thumbnail) return (
-      <Image
+      <img
         src={toCdnUrl(thumbnail)}
         alt='Video thumbnail'
-        width={biggest}
-        height={biggest}
-        style={{ objectFit: 'contain' }}
+        style={{
+          objectFit: 'contain',
+          width: '720px',
+          height: 'min-content',
+        }}
       />
     );
 

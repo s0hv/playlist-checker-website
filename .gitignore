@@ -8,9 +8,9 @@
 # testing
 /coverage
 
-# next.js
-/.next/
+/.tanstack
 /out/
+/dist/
 
 # production
 /build
@@ -35,3 +35,6 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# Local Netlify folder
+.netlify

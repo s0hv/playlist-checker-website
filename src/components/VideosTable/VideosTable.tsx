@@ -1,4 +1,3 @@
-'use client';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Paper } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
