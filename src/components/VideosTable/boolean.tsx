@@ -15,7 +15,7 @@ import Checkbox from '@mui/material/Checkbox';
 import {
   type BooleanFilterOption,
   type FilterProps,
-  type VideoTableColumnDef,
+  type VideoTableColumnDefTyped,
   CellComponent,
 } from './types';
 
@@ -33,7 +33,7 @@ export const boolFilterIcons: Record<BooleanFilterOption, ReactNode> = {
 };
 
 
-export const BooleanCell: CellComponent<boolean | null | undefined | unknown> = ({ cell }) => {
+export const BooleanCell: CellComponent<boolean | null | undefined> = ({ cell }) => {
   const value = cell.getValue<boolean | null | undefined>();
 
   return (
@@ -44,7 +44,7 @@ export const BooleanCell: CellComponent<boolean | null | undefined | unknown> = 
   );
 };
 
-export const BooleanFilter: FC<FilterProps> = ({ column, table }) => {
+export const BooleanFilter: FC<FilterProps<boolean | null | undefined>> = ({ column, table }) => {
   const [filterFn, setFilterFn] = useState<BooleanFilterOption>('noFilter');
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
@@ -102,7 +102,7 @@ export const BooleanFilter: FC<FilterProps> = ({ column, table }) => {
   );
 };
 
-export const booleanColumnDef: Partial<VideoTableColumnDef> = {
+export const booleanColumnDef: Partial<VideoTableColumnDefTyped<boolean | null | undefined>> = {
   Cell: BooleanCell,
   filterFn: 'noFilter',
   columnFilterModeOptions: Array.from(boolFilters),

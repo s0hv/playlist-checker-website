@@ -1,9 +1,9 @@
-import { cookies } from 'next/headers';
+import { setCookie } from '@tanstack/react-start/server';
 
 import { getSession, insertSession } from '@/db/session';
 import { cookieNames, oauthCookieOptions } from '@/src/auth/cookie';
-import { AuthorizationError } from '@/src/errors';
 import type { Session, SessionWithToken } from '@/types/session';
+import { throwAuthorizationError } from 'src/errors';
 
 // Implementation based on lucia auth v3
 // https://lucia-auth.com/sessions/basic
@@ -71,34 +71,32 @@ export async function createSession(): Promise<SessionWithToken> {
 
 export async function validateSessionToken(token: string | undefined): Promise<Session> {
   if (!token) {
-    throw new AuthorizationError();
+    return throwAuthorizationError();
   }
 
   const tokenParts = token.split('.');
   if (tokenParts.length !== 2) {
-    throw new AuthorizationError();
+    return throwAuthorizationError();
   }
   const sessionId = tokenParts[0];
   const sessionSecret = tokenParts[1];
 
   const session = await getSession(sessionId);
   if (!session) {
-    throw new AuthorizationError();
+    return throwAuthorizationError();
   }
 
   const tokenSecretHash = await hashSecret(sessionSecret);
   const validSecret = constantTimeEqual(tokenSecretHash, Buffer.from(session.secretHash, 'base64'));
   if (!validSecret) {
-    throw new AuthorizationError();
+    return throwAuthorizationError();
   }
 
   return session;
 }
 
-export async function setSessionTokenCookie(token: string, expiresAt: Date): Promise<void> {
-  const cookieStore = await cookies();
-
-  cookieStore.set(cookieNames.session, token, {
+export function setSessionTokenCookie(token: string, expiresAt: Date): void {
+  setCookie(cookieNames.session, token, {
     ...oauthCookieOptions,
     maxAge: undefined,
     expires: expiresAt,

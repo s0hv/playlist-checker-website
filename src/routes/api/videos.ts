@@ -1,7 +1,8 @@
+import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 
 import { getFullVideos, getVideoCount } from '@/db/videos';
-import { RequestFixedQuery, validateRequest } from '@/src/serverUtils';
+import { methodNotAllowedHandlers, validateRequest } from '@/src/serverUtils';
 import { SelectStatement, SortItem, WhereItem } from '@/types/api';
 
 const BodySchema = z.object({
@@ -18,18 +19,18 @@ const QuerySchema = z.object({
 type QuerySchema = z.infer<typeof QuerySchema>;
 
 
-const handler = async (req: RequestFixedQuery<BodySchema, QuerySchema>) => {
+const handlePost = async (body: BodySchema, query: QuerySchema) => {
   const {
     select,
     sort,
     where,
-  } = req.parsedBody;
+  } = body;
   const countPromise = getVideoCount(where);
 
   return getFullVideos(select, {
     sort,
-    limit: req.parsedQuery.limit,
-    offset: req.parsedQuery.offset,
+    limit: query.limit,
+    offset: query.offset,
     where,
   })
     .then(async videos => Response.json({
@@ -44,4 +45,15 @@ const handler = async (req: RequestFixedQuery<BodySchema, QuerySchema>) => {
     });
 };
 
-export const POST = validateRequest(handler, { querySchema: QuerySchema, bodySchema: BodySchema });
+const validator = validateRequest({ querySchema: QuerySchema, bodySchema: BodySchema });
+export const Route = createFileRoute('/api/videos')({
+  server: {
+    handlers: {
+      ...methodNotAllowedHandlers,
+      POST: async ({ request }) => {
+        const context = await validator(request);
+        return handlePost(context.body, context.query);
+      },
+    },
+  },
+});

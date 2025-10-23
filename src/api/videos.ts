@@ -1,7 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
-import ky from 'ky';
 
 import { PaginationState } from '@/components/VideosTable/types';
+import { baseKy } from '@/src/utils';
 import { ApiColumnFilter, ColumnSort, VideoRow } from '@/types/types';
 
 export type VideoSelect = Record<string, string[]>;
@@ -34,7 +34,7 @@ export const getVideos = (query: GetVideoQuery): Promise<VideoRows> => {
     ...searchParams
   } = query;
 
-  return ky.post<VideoRows>('/api/videos', {
+  return baseKy.post<VideoRows>('/api/videos', {
     json: {
       select,
       where,

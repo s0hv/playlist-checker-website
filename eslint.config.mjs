@@ -1,9 +1,10 @@
 // @ts-check
 
 import eslint from '@eslint/js';
-import nextPlugin from '@next/eslint-plugin-next';
 import stylistic from '@stylistic/eslint-plugin';
 import pluginQuery from '@tanstack/eslint-plugin-query';
+import pluginRouter from '@tanstack/eslint-plugin-router';
+import { defineConfig } from 'eslint/config';
 import importPlugin from 'eslint-plugin-import';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -43,10 +44,10 @@ const importOrderBase = {
   },
 };
 
-export default tseslint.config(
+export default defineConfig(
   // ignores must be the only property in the object
   {
-    ignores: ['public/*', '**/dist/*', '.*/*'],
+    ignores: ['public/*', '**/dist/*', '.*/*', 'src/routeTree.gen.ts'],
   },
   {
     files: [
@@ -57,13 +58,17 @@ export default tseslint.config(
     ],
   },
   eslint.configs.recommended,
+  // eslint-disable-next-line import/no-named-as-default-member
   tseslint.configs.recommended,
-  importPlugin.flatConfigs.recommended,
+  // eslint-disable-next-line import/no-named-as-default-member
+  tseslint.configs.recommendedTypeChecked,
   stylistic.configs.recommended,
-  nextPlugin.flatConfig.recommended,
-  reactHooks.configs['recommended-latest'],
+  reactHooks.configs.flat['recommended-latest'],
   pluginQuery.configs['flat/recommended'],
   {
+    linterOptions: {
+      reportUnusedDisableDirectives: 'error',
+    },
     plugins: {
       react,
     },
@@ -71,9 +76,11 @@ export default tseslint.config(
       globals: {
         ...globals.browser,
         ...globals.node,
-        ...globals.es2020,
+        ...globals.es2022,
       },
       parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
         ecmaFeatures: {
           jsx: true,
         },
@@ -84,11 +91,15 @@ export default tseslint.config(
         version: 'detect',
       },
       'import/resolver': {
-        typescript: {
-          project: './tsconfig.json',
-        },
+        typescript: true,
+        node: true,
       },
     },
+    extends: [
+      importPlugin.flatConfigs.recommended,
+      importPlugin.flatConfigs.typescript,
+      pluginRouter.configs['flat/recommended'],
+    ],
     rules: {
       // Code style
       '@stylistic/semi': ['error', 'always', { omitLastInOneLineBlock: true }],
@@ -141,9 +152,23 @@ export default tseslint.config(
       '@stylistic/jsx-one-expression-per-line': ['error', {
         allow: 'non-jsx',
       }],
+      '@typescript-eslint/only-throw-error': [
+        'error',
+        {
+          allowRethrowing: true,
+          allow: [
+            {
+              from: 'package',
+              package: '@tanstack/router-core',
+              name: ['Redirect', 'JsonResponse'],
+            },
+          ],
+        },
+      ],
+      '@typescript-eslint/unbound-method': 'off',
 
       // React
-      'react/jsx-filename-extension': [1, { extensions: ['.jsx', '.tsx']}],
+      'react/jsx-filename-extension': ['error', { extensions: ['.jsx', '.tsx']}],
       'react/function-component-definition': 'off',
       'react/no-unstable-nested-components': ['error', { allowAsProps: true }],
       'import/order': [
@@ -170,11 +195,8 @@ export default tseslint.config(
       'import/no-extraneous-dependencies': ['error', {
         devDependencies: [
           'eslint.config.mjs',
-          'next.config.ts',
+          'vite.config.ts',
         ]}],
-
-      // Disabled rules
-      // '@next/next/no-img-element': 'off',
     },
   }
 );

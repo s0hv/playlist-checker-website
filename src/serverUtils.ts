@@ -1,38 +1,47 @@
 import { URL } from 'url';
 
-import { cookies } from 'next/headers';
-import type { NextRequest } from 'next/server';
+import type { RouteMethod } from '@tanstack/react-start';
+import { getCookie } from '@tanstack/react-start/server';
 import { type ZodObject, z } from 'zod';
 
-import { cookieNames } from '@/src/auth/cookie';
-import { validateSessionToken } from '@/src/auth/session';
+import { cookieNames } from 'src/auth/cookie';
+import { validateSessionToken } from 'src/auth/session';
+import { throwBadRequestError, throwForbiddenError } from 'src/errors';
 
-export interface BetterQuery<TBody = never, TQuery = never> {
-  json: <T>() => Promise<T>
-  parsedBody: TBody
-  parsedQuery: TQuery
-}
-export type RequestFixedQuery<TBody = never, TQuery = never> = NextRequest & BetterQuery<TBody, TQuery>;
-type RequestFn<TBody = never, TQuery = never> = (req: RequestFixedQuery<TBody, TQuery>) => void;
+export type ContextType<
+  TBody extends ZodObject = never,
+  TQuery extends ZodObject = never
+> = {
+  body: TBody extends ZodObject ? z.infer<TBody> : undefined
+  query: TQuery extends ZodObject ? z.infer<TQuery> : undefined
+};
 
-export const validateRequest = <TBody extends ZodObject = never, TQuery extends ZodObject = never>(
-  fn: RequestFn<z.infer<TBody>, z.infer<TQuery>>,
+
+export const validateRequest = <
+  TBody extends ZodObject = never,
+  TQuery extends ZodObject = never
+>(
   {
     bodySchema,
     querySchema,
   }: { bodySchema?: TBody, querySchema?: TQuery }) => {
-  return async (req: RequestFixedQuery<z.infer<TBody>, z.infer<TQuery>>) => {
-    // First authenticate the user
-    if (!await checkAuth()) return;
+  return async (req: Request): Promise<ContextType<TBody, TQuery>> => {
+    await checkAuth();
+
+    const context: ContextType<TBody, TQuery> = {
+      body: undefined,
+      query: undefined,
+    } as ContextType<TBody, TQuery>;
 
     if (bodySchema) {
-      const result = await bodySchema.safeParseAsync(await req.json());
+      const json: unknown = await req.json().catch(() => null);
+      const result = await bodySchema.safeParseAsync(json);
 
       if (!result.success) {
-        return Response.json({ errors: result.error.issues }, { status: 400 });
+        return throwBadRequestError({ errors: result.error.issues });
       }
 
-      req.parsedBody = result.data;
+      (context as ContextType<ZodObject>).body = result.data;
     }
 
     if (querySchema) {
@@ -41,24 +50,46 @@ export const validateRequest = <TBody extends ZodObject = never, TQuery extends 
       const result = await querySchema.safeParseAsync(query);
 
       if (!result.success) {
-        return Response.json({ errors: result.error.issues }, { status: 400 });
+        return throwBadRequestError({ errors: result.error.issues });
       }
 
-      req.parsedQuery = result.data;
+      (context as ContextType<never, ZodObject>).query = result.data;
     }
 
-    return fn(req);
+    return context;
   };
 };
 
-export const checkAuth = async (): Promise<boolean | Response> => {
-  const session = (await cookies()).get(cookieNames.session)?.value;
+export const checkAuth = async (): Promise<void> => {
+  const session = getCookie(cookieNames.session);
 
   try {
     await validateSessionToken(session);
-  } catch {
-    return new Response(null, { status: 403 });
-  }
+  } catch (err: unknown) {
+    if (err instanceof Response) {
+      throw err;
+    }
 
-  return true;
+    throwForbiddenError();
+  }
+};
+
+export const methodNotAllowedHandler = () => new Response(null, {
+  status: 405,
+});
+
+/**
+ * A mapping for each HTTP method handler to return a 405 Method Not Allowed response.
+ *
+ * This should be used in API routes as a default, so the default handler is not called.
+ */
+export const methodNotAllowedHandlers: Record<RouteMethod, () => Response> = {
+  ALL: methodNotAllowedHandler,
+  DELETE: methodNotAllowedHandler,
+  GET: methodNotAllowedHandler,
+  HEAD: methodNotAllowedHandler,
+  OPTIONS: methodNotAllowedHandler,
+  PATCH: methodNotAllowedHandler,
+  POST: methodNotAllowedHandler,
+  PUT: methodNotAllowedHandler,
 };

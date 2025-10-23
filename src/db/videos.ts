@@ -110,7 +110,7 @@ const generateWhere = (where: WhereItem[]): [FragmentSqlToken, Set<Table>] => {
       whereClause.push(sql.fragment`${col} ${comp} ${preProcessValue[compString](filter.value)}`);
     }
 
-    tables.add(<Table>filter.table);
+    tables.add(filter.table);
   }
 
   return [

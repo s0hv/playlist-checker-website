@@ -1,20 +1,30 @@
+import { createFileRoute } from '@tanstack/react-router';
+import { getCookie } from '@tanstack/react-start/server';
 import type { OAuth2Tokens } from 'arctic';
-import { cookies } from 'next/headers';
 
 import { cookieNames } from '@/src/auth/cookie';
 import { discord, DiscordUser } from '@/src/auth/oauthDiscord';
 import { createSession, setSessionTokenCookie } from '@/src/auth/session';
 import { sessionExpiresInSeconds } from '@/src/constants';
+import { methodNotAllowedHandlers } from '@/src/serverUtils';
+
+export const Route = createFileRoute('/auth/discord/callback')({
+  server: {
+    handlers: {
+      ...methodNotAllowedHandlers,
+      GET: ({ request }) => GET(request),
+    },
+  },
+});
 
 
-export async function GET(request: Request): Promise<Response> {
+async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
 
-  const cookieStore = await cookies();
-  const storedState = cookieStore.get(cookieNames.discordOauthState)?.value ?? null;
-  const codeVerifier = cookieStore.get(cookieNames.discordCodeVerifier)?.value ?? null;
+  const storedState = getCookie(cookieNames.discordOauthState) ?? null;
+  const codeVerifier = getCookie(cookieNames.discordCodeVerifier) ?? null;
 
   if (code === null || state === null || storedState === null || codeVerifier === null) {
     return new Response(null, {
@@ -62,7 +72,7 @@ export async function GET(request: Request): Promise<Response> {
 
 
   const session = await createSession();
-  await setSessionTokenCookie(session.token, new Date(session.createdAt.getTime() + sessionExpiresInSeconds * 1000));
+  setSessionTokenCookie(session.token, new Date(session.createdAt.getTime() + sessionExpiresInSeconds * 1000));
 
   return new Response(null, {
     status: 302,

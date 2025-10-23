@@ -1,6 +1,9 @@
 import { SliderProps, Typography } from '@mui/material';
 
-import { type VideoTableColumnDef, CellComponent } from './types';
+import {
+  type VideoTableColumnDefTyped,
+  CellComponent,
+} from './types';
 
 
 export const KILOBYTE = 1024;
@@ -32,7 +35,7 @@ export const defaultBytesSliderProps: SliderProps = {
 };
 
 
-export const BytesCell: CellComponent<number | unknown> = ({ cell }) => {
+export const BytesCell: CellComponent<number> = ({ cell }) => {
   const value = cell.getValue();
 
   let bytes = null;
@@ -43,7 +46,7 @@ export const BytesCell: CellComponent<number | unknown> = ({ cell }) => {
   return <Typography>{bytes}</Typography>;
 };
 
-export const bytesColumnDef: Partial<VideoTableColumnDef> = {
+export const bytesColumnDef: Partial<VideoTableColumnDefTyped<number>> = {
   Cell: BytesCell,
   filterFn: 'betweenInclusive',
   filterVariant: 'range-slider',

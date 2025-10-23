@@ -1,11 +1,11 @@
 import { queryOptions } from '@tanstack/react-query';
-import ky from 'ky';
 
+import { baseKy } from '@/src/utils';
 import { PlaylistName } from '@/types/types';
 
 
 export const getPlaylists = (): Promise<PlaylistName[]> => {
-  return ky.get('/api/playlists')
+  return baseKy.get('/api/playlists')
     .json<{ rows: PlaylistName[] }>()
     .then(json => json.rows);
 };

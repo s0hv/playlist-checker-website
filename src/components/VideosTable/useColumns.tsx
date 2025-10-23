@@ -8,11 +8,12 @@ import { bytesColumnDef } from './bytes';
 import { stringColumnDef, stringIdColumnDef } from './columnInfos';
 import { dateColumnDef } from './dates';
 import { numberColumnDef } from './number';
-import { VideoTableColumnDef } from './types';
+import { type VideoTableColumnDefTyped, VideoTableColumnDef } from './types';
 
 
 export const useColumns = (): VideoTableColumnDef[] => {
-  return useMemo<VideoTableColumnDef[]>(() => [
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return useMemo<VideoTableColumnDefTyped<any>[]>(() => [
     {
       header: 'ID',
       accessorKey: 'id',
@@ -135,5 +136,6 @@ export const useColumns = (): VideoTableColumnDef[] => {
       accessorKey: 'tagTag',
       ...arrayColumnDef,
     },
-  ] satisfies VideoTableColumnDef[], []);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ] satisfies VideoTableColumnDefTyped<any>[], []);
 };

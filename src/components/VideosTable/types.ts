@@ -13,10 +13,11 @@ import { ColumnName } from './columnInfos';
 export type FilterFns<TKeys extends string> = Record<TKeys, () => boolean>;
 
 export type VideoTableColumnDef = MRT_ColumnDef<VideoRow>;
+export type VideoTableColumnDefTyped<TValue> = MRT_ColumnDef<VideoRow, TValue>;
 export type RenderFilterModeMenuItems = VideoTableColumnDef['renderColumnFilterModeMenuItems'];
 export type CellComponent<TValue> = MRT_ColumnDef<VideoRow, TValue>['Cell'];
-export type FilterProps = {
-  column: MRT_Column<VideoRow>
+export type FilterProps<TValue = unknown> = {
+  column: MRT_Column<VideoRow, TValue>
   header: MRT_Header<VideoRow>
   rangeFilterIndex?: number
   table: MRT_TableInstance<VideoRow>

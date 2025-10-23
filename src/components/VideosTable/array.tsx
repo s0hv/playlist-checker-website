@@ -13,7 +13,7 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 
 import {
   type RenderFilterModeMenuItems,
-  type VideoTableColumnDef,
+  type VideoTableColumnDefTyped,
   ArrayFilterOption,
   CellComponent,
   FilterFns,
@@ -47,7 +47,7 @@ export const renderArrayFilterModeMenuItems: RenderFilterModeMenuItems = ({ onSe
 ));
 
 
-export const ArrayCell: CellComponent<unknown[] | unknown> = ({ cell }) => {
+export const ArrayCell: CellComponent<string[] | null> = ({ cell }) => {
   const value = cell.getValue();
 
   if (!value || !Array.isArray(value)) {
@@ -106,7 +106,7 @@ export const ArrayCell: CellComponent<unknown[] | unknown> = ({ cell }) => {
   );
 };
 
-export const arrayColumnDef: Partial<VideoTableColumnDef> = {
+export const arrayColumnDef: Partial<VideoTableColumnDefTyped<string[] | null>> = {
   Cell: ArrayCell,
   filterVariant: 'text',
   renderColumnFilterModeMenuItems: renderArrayFilterModeMenuItems,

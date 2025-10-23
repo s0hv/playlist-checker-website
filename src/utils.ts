@@ -1,5 +1,6 @@
 import { format, formatDistanceToNowStrict } from 'date-fns';
 import { enGB as enLocale } from 'date-fns/locale/en-GB';
+import ky from 'ky';
 
 import { FilterType } from '@/components/VideosTable/types';
 
@@ -106,4 +107,6 @@ export const defaultDateDistanceToNow = (date: MaybeDate, ifUndefined = 'Unknown
 };
 
 export const toCdnUrl = <T extends string | undefined>(filename: T | null): T =>
-  typeof filename === 'string' ? <T>`${process.env.NEXT_PUBLIC_FILEHOST_URL}/${filename}` : <T>undefined;
+  typeof filename === 'string' ? <T>`${import.meta.env.VITE_PUBLIC_FILEHOST_URL}/${filename}` : <T>undefined;
+
+export const baseKy = ky.create({ timeout: 20_000 });

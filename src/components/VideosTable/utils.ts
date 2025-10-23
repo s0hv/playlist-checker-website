@@ -180,7 +180,7 @@ export const colsToSelectQuery = (cols: ColumnName[] | Set<ColumnName>, excludeC
     // Some columns are always excluded from the select query
     if (noExclude && (selectExcludedCols.has(col) || excludeColumns.has(col))) return;
 
-    const [table, actualCol] = columnToTableCol[col as ColumnName];
+    const [table, actualCol] = columnToTableCol[col];
     if (!select[table]) select[table] = [];
 
     select[table].push(actualCol);
