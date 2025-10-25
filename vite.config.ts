@@ -4,14 +4,9 @@ import viteReact from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
-import { prerenderHeader } from './src/constants';
-
 export default defineConfig({
   server: {
     port: 3000,
-  },
-  ssr: {
-    noExternal: ['@mui/*'],
   },
   plugins: [
     tsconfigPaths(),
@@ -24,13 +19,10 @@ export default defineConfig({
       },
       sitemap: {
         enabled: true,
-        host: new URL(process.env.OAUTH_REDIRECT ?? '').origin,
+        host: new URL(process.env.OAUTH_REDIRECT ?? 'https://localhost:3000').origin,
       },
       prerender: {
-        enabled: true,
-        // This header can be used to disable optional features during the prerender
-        // such as automatic redirects based on authentication status.
-        headers: { [prerenderHeader]: 'true' },
+        enabled: false,
       },
     }),
     viteReact(),
