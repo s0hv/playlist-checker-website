@@ -11,6 +11,8 @@
 /.tanstack
 /out/
 /dist/
+/.output/
+/.nitro/
 
 # production
 /build

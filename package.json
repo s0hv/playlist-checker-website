@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite dev | roarr pretty-print",
     "build": "vite build",
-    "start": "node .output/server/index.js",
+    "start": "node .output/server/index.mjs",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "typecheck": "tsc"

@@ -3,10 +3,11 @@ import { createMiddleware } from '@tanstack/react-start';
 import { getCookie } from '@tanstack/react-start/server';
 
 import { cookieNames } from '@/src/auth/cookie';
+import { prerenderHeader } from '@/src/constants';
 
 export const redirectToAuthMiddleware = createMiddleware()
-  .server(({ next, pathname }) => {
-    if (pathname.startsWith('/auth')) {
+  .server(({ next, pathname, request }) => {
+    if (pathname.startsWith('/auth') || request.headers.get(prerenderHeader) === 'true') {
       return next();
     }
 
