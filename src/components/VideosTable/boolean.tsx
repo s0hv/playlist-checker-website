@@ -3,7 +3,6 @@ import {
   type MouseEvent,
   type ReactNode,
   useCallback,
-  useEffect,
   useState,
 } from 'react';
 import Check from '@mui/icons-material/Check';
@@ -55,18 +54,15 @@ export const BooleanFilter: FC<FilterProps<boolean | null | undefined>> = ({ col
     closeMenu();
     setFilterFn(filter);
 
+    // Set the filter value so it is included in the where statement.
+    // This only needs to be done once, but it's easier to just do it reactively here
+    column.setFilterValue('true');
+
     table.setColumnFilterFns(prev => ({
       ...prev,
       [column.id]: filter,
     }));
   }, [column, table, closeMenu]);
-
-  // Set the filter value so it is included in the where statement.
-  // This only needs to be done once
-  useEffect(() => {
-    column.setFilterValue('true');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center' }}>

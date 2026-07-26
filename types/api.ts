@@ -39,13 +39,18 @@ export const WhereItem = z.intersection(
     'comp',
     [
       z.object({
-        comp: z.literal(['=', 'ILIKE', 'NOT ILIKE', '<>', '<', '<=', '>', '>=', 'true', 'false', 'at', 'before', 'after'] as const satisfies Comparator[]),
+        comp: z.literal(['=', 'ILIKE', 'NOT ILIKE', '<>', '<', '<=', '>', '>=', 'at', 'before', 'after'] as const satisfies Comparator[]),
         value: z.union([z.string(), z.number()]),
       }),
 
       z.object({
         comp: z.literal(['arrayAny', 'array=', 'arrayLike'] as const satisfies Comparator[]),
         value: z.union([z.array(z.string()), z.array(z.number())]),
+      }),
+
+      z.object({
+        comp: z.literal(['empty', 'notEmpty', 'true', 'false'] as const satisfies Comparator[]),
+        value: z.unknown().optional().transform(() => ''),
       }),
     ]
   ),

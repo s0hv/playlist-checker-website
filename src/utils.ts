@@ -52,6 +52,8 @@ export const filterOperations = {
   arrayAny: 'arrayAny',
   between: 'between',
   betweenInclusive: 'betweenInclusive',
+  empty: 'empty',
+  notEmpty: 'notEmpty',
 } as const satisfies Partial<Record<FilterType, string | null>>;
 export type FilterOperation = keyof typeof filterOperations;
 
@@ -83,6 +85,8 @@ export const filterValueTransformations: Record<FilterOperation, (s: string) => 
   arrayAny: noTransformation,
   between: noTransformation,
   betweenInclusive: noTransformation,
+  empty: noTransformation,
+  notEmpty: noTransformation,
 } as const;
 
 type MaybeDate = Date | undefined | null | number;

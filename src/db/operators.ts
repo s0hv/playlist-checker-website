@@ -39,6 +39,10 @@ export const preProcessValue: Record<Comparator, PreProcessor> = {
       : 'int8';
     return sql.fragment`ANY(${sql.array(valueArray, memberType)})`;
   },
+  // This is a small workaround to get the statement to look like this
+  // (col = '') IS NOT FALSE
+  empty: () => sql.fragment`IS NOT FALSE`,
+  notEmpty: () => '',
 };
 
 export const preProcessColumn: Record<Comparator, ColumnPreProcessor> = {
@@ -58,6 +62,8 @@ export const preProcessColumn: Record<Comparator, ColumnPreProcessor> = {
   'array=': noColumnPreProcess,
   arrayLike: noColumnPreProcess,
   arrayAny: noColumnPreProcess,
+  empty: col => sql.fragment`(${col} = '')`,
+  notEmpty: noColumnPreProcess,
 };
 
 export const comparatorMapping: Record<Comparator, FragmentSqlToken> = {
@@ -77,4 +83,6 @@ export const comparatorMapping: Record<Comparator, FragmentSqlToken> = {
   'array=': sql.fragment`=`,
   arrayLike: sql.fragment`ILIKE`,
   arrayAny: sql.fragment`=`,
+  empty: sql.fragment``,
+  notEmpty: sql.fragment`<>`,
 };

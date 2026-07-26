@@ -92,8 +92,6 @@ export const VideosTable = () => {
   const [where, setWhere] = useState<VideoWhere>([]);
   const [sort, setSort] = useState<VideoSort>(() => mapSortingState(sorting));
 
-  const [rowCount, setRowCount] = useState(0);
-
   const {
     data,
     isLoading,
@@ -102,14 +100,9 @@ export const VideosTable = () => {
     enabled: localStorageFullyLoaded,
   });
 
-  useEffect(() => {
-    if (!data) return;
-
-    // Row count currently matches the page count for some reason
-    setRowCount(data.count);
-  }, [data, pagination.pageSize]);
-
   const onColumnFilterFnsChange = useMemo<OnChangeFn<Partial<Record<ColumnName, FilterType>>>>(() => changeHandler(
+    // This returns a callback function
+    // eslint-disable-next-line react-hooks/refs
     (filterFns: Partial<Record<ColumnName, FilterType>>) => {
       columnFilterFnsRef.current = filterFns;
       setWhere(buildWhereStatement(columnsMap, columnFiltersRef.current, filterFns));
@@ -118,6 +111,8 @@ export const VideosTable = () => {
   ), [columnsMap]);
 
   const onColumnFiltersChange = useMemo<OnChangeFn<ColumnFilter[]>>(() => changeHandler(
+    // This returns a callback function
+    // eslint-disable-next-line react-hooks/refs
     (filters: ColumnFilter[]) => {
       columnFiltersRef.current = filters;
       setWhere(buildWhereStatement(columnsMap, filters, columnFilterFnsRef.current));
@@ -125,11 +120,15 @@ export const VideosTable = () => {
     setColumnFilters
   ), [columnsMap]);
 
+  // False positive
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const onColumnSortingChange = useMemo<OnChangeFn<SortingState>>(() => changeHandler(
     (sorting: SortingState) => setSort(mapSortingState(sorting)),
     setSorting
   ), []);
 
+  // False positive
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const onColumnVisibilityChange = useMemo<OnChangeFn<VisibilityState>>(() => changeHandler(
     (visibility: VisibilityState) => {
       const hiddenCols = Object.entries(visibility)
@@ -143,6 +142,7 @@ export const VideosTable = () => {
 
   useLayoutEffect(() => {
     onColumnVisibilityChange(getInitialColumnVisibility());
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalStorageLoaded(old => ({
       ...old,
       hiddenCols: true,
@@ -151,6 +151,7 @@ export const VideosTable = () => {
 
   useLayoutEffect(() => {
     const savedOrder = getInitialColumnOrder();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalStorageLoaded(old => ({
       ...old,
       columnOrder: true,
@@ -178,7 +179,7 @@ export const VideosTable = () => {
   const table = useMaterialReactTable({
     columns: columns,
     data: data?.rows ?? noRows,
-    rowCount,
+    rowCount: data?.count ?? 0,
 
     // Table options
     columnResizeMode: 'onChange',

@@ -84,7 +84,7 @@ export const methodNotAllowedHandler = () => new Response(null, {
  * This should be used in API routes as a default, so the default handler is not called.
  */
 export const methodNotAllowedHandlers: Record<RouteMethod, () => Response> = {
-  ALL: methodNotAllowedHandler,
+  ANY: methodNotAllowedHandler,
   DELETE: methodNotAllowedHandler,
   GET: methodNotAllowedHandler,
   HEAD: methodNotAllowedHandler,

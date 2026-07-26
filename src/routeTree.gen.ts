@@ -10,8 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiVideosRouteImport } from './routes/api/videos'
 import { Route as ApiPlaylistsRouteImport } from './routes/api/playlists'
+import { Route as ApiVideosRouteImport } from './routes/api/videos'
 import { Route as AuthDiscordRouteRouteImport } from './routes/auth/discord/route'
 import { Route as AuthDiscordCallbackRouteImport } from './routes/auth/discord/callback'
 
@@ -20,14 +20,14 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiVideosRoute = ApiVideosRouteImport.update({
-  id: '/api/videos',
-  path: '/api/videos',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPlaylistsRoute = ApiPlaylistsRouteImport.update({
   id: '/api/playlists',
   path: '/api/playlists',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiVideosRoute = ApiVideosRouteImport.update({
+  id: '/api/videos',
+  path: '/api/videos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthDiscordRouteRoute = AuthDiscordRouteRouteImport.update({
@@ -103,18 +103,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/videos': {
-      id: '/api/videos'
-      path: '/api/videos'
-      fullPath: '/api/videos'
-      preLoaderRoute: typeof ApiVideosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/playlists': {
       id: '/api/playlists'
       path: '/api/playlists'
       fullPath: '/api/playlists'
       preLoaderRoute: typeof ApiPlaylistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/videos': {
+      id: '/api/videos'
+      path: '/api/videos'
+      fullPath: '/api/videos'
+      preLoaderRoute: typeof ApiVideosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/discord': {

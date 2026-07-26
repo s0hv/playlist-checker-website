@@ -27,8 +27,25 @@ export const tableCols = {
 } as const satisfies TableCols;
 
 export const comparators = [
-  '=', 'ILIKE', 'NOT ILIKE', '<>', '<', '<=', '>', '>=',
-  'true', 'false', 'at', 'before', 'after', 'array=', 'arrayLike', 'arrayAny'] as const;
+  '=',
+  'ILIKE',
+  'NOT ILIKE',
+  '<>',
+  '<',
+  '<=',
+  '>',
+  '>=',
+  'true',
+  'false',
+  'at',
+  'before',
+  'after',
+  'array=',
+  'arrayLike',
+  'arrayAny',
+  'empty',
+  'notEmpty',
+] as const;
 export const Comparator = z.literal(comparators);
 
 export type Comparator = z.infer<typeof Comparator>;

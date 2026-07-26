@@ -6,6 +6,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
+// eslint-disable-next-line import/default
 import fontsourceVariableRobotoCss from '@fontsource-variable/roboto?url';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {

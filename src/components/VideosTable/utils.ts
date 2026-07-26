@@ -49,6 +49,7 @@ export const buildWhereStatement = (
   columnFilters: ColumnFilter[],
   columnFilterFns: Partial<Record<ColumnName, FilterType>>
 ): VideoWhere => {
+  console.log(columnFilters);
   return columnFilters.flatMap<ApiColumnFilter | null>(columnFilter => {
     const columnName = columnFilter.id as ColumnName;
     const columnDef = columnMap[columnName]!;
