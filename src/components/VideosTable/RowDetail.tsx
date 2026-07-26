@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import { type ReactEventHandler, FC, useCallback } from 'react';
 import { Box } from '@mui/material';
 import type { MRT_Row } from 'material-react-table';
 
@@ -20,6 +20,12 @@ const YouTube: FC<YouTubeProps> = ({ videoId }: YouTubeProps) => (
   >
   </iframe>
 );
+
+
+const onVideoLoadStart: ReactEventHandler<HTMLVideoElement> = e => {
+  // Default volume should be something sensible
+  e.currentTarget.volume = 0.4;
+};
 
 type VideoProps = { filename?: string | null, thumbnail?: string | null };
 const VideoContainer: FC<VideoProps> = ({ filename, thumbnail }: VideoProps) => {
@@ -45,6 +51,7 @@ const VideoContainer: FC<VideoProps> = ({ filename, thumbnail }: VideoProps) => 
       width={embedSize.w}
       height={embedSize.h}
       poster={toCdnUrl(thumbnail)}
+      onLoadStart={onVideoLoadStart}
     >
       <source src={toCdnUrl(filename)} type='video/x-matroska' />
       <source src={toCdnUrl(filename)} type='video/webm' />
