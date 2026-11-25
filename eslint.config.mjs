@@ -194,6 +194,9 @@ export default defineConfig(
         devDependencies: [
           'eslint.config.mjs',
           'vite.config.ts',
+          'vitest.config.ts',
+          '**/*.test.ts',
+          '**/*.test.tsx',
         ],
       }],
     },
