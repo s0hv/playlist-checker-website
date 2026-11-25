@@ -42,7 +42,7 @@ export interface ColumnSort {
 export interface ApiColumnFilter {
   col: string
   table: string
-  value: string | string[] | number
+  value: string | number | readonly string[] | readonly number[]
   comp: string
 }
 
