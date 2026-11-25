@@ -1,11 +1,11 @@
 import { sessionExpiresInSeconds } from '@/src/constants';
 import { Session } from '@/types/session';
 
-import { pool, sql } from './index';
+import { getPool, sql } from './index';
 
 
-export const insertSession = (session: Session) => {
-  return pool.query(sql.typeAlias('void')`
+export const insertSession = async (session: Session) => {
+  return (await getPool()).query(sql.typeAlias('void')`
     INSERT INTO session (id, secret_hash, created_at) 
     VALUES (${session.id}, ${session.secretHash}, ${session.createdAt})
   `);
@@ -14,7 +14,7 @@ export const insertSession = (session: Session) => {
 export const getSession = async (sessionId: string) => {
   const now = new Date();
 
-  const session = await pool.one(sql.type(Session)`
+  const session = await (await getPool()).one(sql.type(Session)`
     SELECT * FROM session WHERE id = ${sessionId}
   `);
 
@@ -26,8 +26,8 @@ export const getSession = async (sessionId: string) => {
   return session;
 };
 
-export const deleteSession = (sessionId: string) => {
-  return pool.query(sql.typeAlias('void')`
+export const deleteSession = async (sessionId: string) => {
+  return (await getPool()).query(sql.typeAlias('void')`
     DELETE FROM session WHERE id = ${sessionId}
   `);
 };
