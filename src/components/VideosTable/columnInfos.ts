@@ -1,6 +1,4 @@
-import { ColumnSort, SortingState } from '@tanstack/table-core';
-
-import { VideoTableColumnDef } from './types';
+import type { ColumnSort, SortingState } from '@tanstack/react-table';
 
 export const columnToTableCol = {
   id: ['video', 'id'],
@@ -37,25 +35,6 @@ export const columnToTableCol = {
 };
 
 export type ColumnName = keyof typeof columnToTableCol;
-
-export const stringColumnDef: Partial<VideoTableColumnDef> = {
-  filterFn: 'contains',
-  enableResizing: true,
-  columnFilterModeOptions: [
-    'contains',
-    'startsWith',
-    'endsWith',
-    'equals',
-    'notEquals',
-    'notEmpty',
-    'empty',
-  ],
-};
-
-export const stringIdColumnDef: Partial<VideoTableColumnDef> = {
-  filterFn: 'equals',
-  columnFilterModeOptions: ['equals', 'notEquals'],
-};
 
 export const allColumnNames = new Set<ColumnName>(Object.keys(columnToTableCol) as ColumnName[]);
 
@@ -127,4 +106,3 @@ export const rowDetailCols: Readonly<ColumnName[]> = [
   'filesSubtitles',
   'filesAudioFile',
 ] as const;
-

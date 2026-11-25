@@ -1,40 +1,24 @@
-import {
-  MRT_Column,
-  MRT_ColumnDef,
-  MRT_FilterOption,
-  MRT_Header,
-  MRT_TableInstance,
-} from 'material-react-table';
+import type { FC } from 'react';
 
-import type { VideoRow } from '@/types/types';
+import type {
+  ColumnFilterState,
+  FilterKind,
+  FilterMode,
+  FilterValue,
+} from './filters/modes';
 
-import { ColumnName } from './columnInfos';
-
-export type FilterFns<TKeys extends string> = Record<TKeys, () => boolean>;
-
-export type VideoTableColumnDef = MRT_ColumnDef<VideoRow>;
-export type VideoTableColumnDefTyped<TValue> = MRT_ColumnDef<VideoRow, TValue>;
-export type RenderFilterModeMenuItems = VideoTableColumnDef['renderColumnFilterModeMenuItems'];
-export type CellComponent<TValue> = MRT_ColumnDef<VideoRow, TValue>['Cell'];
-export type FilterProps<TValue = unknown> = {
-  column: MRT_Column<VideoRow, TValue>
-  header: MRT_Header<VideoRow>
-  rangeFilterIndex?: number
-  table: MRT_TableInstance<VideoRow>
+export type CellProps<TValue> = {
+  value: TValue
 };
+export type CellComponent<TValue> = FC<CellProps<TValue>>;
 
-export type DateFilterOption = 'after' | 'before' | 'at';
-export type ArrayFilterOption = 'arrayEqual' | 'arrayContains' | 'arrayStartswith';
-export type BooleanFilterOption = 'noFilter' | 'true' | 'false';
-
-export type FilterType = MRT_FilterOption
-  | DateFilterOption
-  | ArrayFilterOption
-  | BooleanFilterOption
-  | 'arrayAny';
-
-export type PaginationState = {
-  pageIndex: number
-  pageSize: number
+/**
+ * `onChange(undefined)` removes the filter of the column.
+ */
+export type FilterProps = {
+  kind: FilterKind
+  mode: FilterMode
+  value: FilterValue | undefined
+  onChange: (filter: ColumnFilterState | undefined) => void
 };
-export type ColumnsMap = Partial<Record<ColumnName, VideoTableColumnDef>>;
+export type FilterComponent = FC<FilterProps>;

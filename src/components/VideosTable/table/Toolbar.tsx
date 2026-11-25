@@ -96,17 +96,20 @@ export const Toolbar: FC<ToolbarProps> = ({
   resetColumnLayout,
 }) => (
   <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 0.5 }}>
-    <ColumnVisibilityMenu table={table} />
     <Tooltip title='Reset column layout'>
-      <IconButton aria-label='Reset column layout' onClick={resetColumnLayout}>
+      <IconButton aria-label='Reset column layout' onClick={resetColumnLayout} sx={{ mr: '3rem' }}>
         <RestartAlt />
       </IconButton>
     </Tooltip>
+
+    <ColumnVisibilityMenu table={table} />
+
     <Tooltip title='Toggle density'>
       <IconButton aria-label='Toggle density' onClick={() => setDensity(nextDensity[density])}>
         {densityIcons[density]}
       </IconButton>
     </Tooltip>
+
     <Tooltip title={isFullScreen ? 'Exit full screen' : 'Full screen'}>
       <IconButton
         aria-label={isFullScreen ? 'Exit full screen' : 'Full screen'}

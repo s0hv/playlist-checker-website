@@ -4,52 +4,15 @@ import {
   List,
   ListItem,
   ListItemText,
-  MenuItem,
   Typography,
 } from '@mui/material';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 
-import {
-  type RenderFilterModeMenuItems,
-  type VideoTableColumnDefTyped,
-  ArrayFilterOption,
-  CellComponent,
-  FilterFns,
-} from './types';
-import { getFilterLocalizations, getFilterMethods } from './utils';
+import type { CellComponent } from './types';
 
-export const arrayFilterMessages: Record<ArrayFilterOption, string> = {
-  arrayEqual: 'Array equals',
-  arrayContains: 'Array contains',
-  arrayStartswith: 'Array starts with',
-};
-
-export const arrayFilterLocalization = getFilterLocalizations(arrayFilterMessages);
-
-export const arrayFilterMethods: FilterFns<ArrayFilterOption> = getFilterMethods(arrayFilterMessages);
-
-export const arrayFilterOptions: ArrayFilterOption[] = [
-  'arrayEqual',
-  'arrayContains',
-  'arrayStartswith',
-];
-
-export const renderArrayFilterModeMenuItems: RenderFilterModeMenuItems = ({ onSelectFilterMode }) => arrayFilterOptions.map(filterOption => (
-  <MenuItem
-    key={filterOption}
-    onClick={() => onSelectFilterMode(filterOption)}
-    sx={{ display: 'flex', gap: 1 }}
-  >
-    {arrayFilterMessages[filterOption]}
-  </MenuItem>
-));
-
-
-export const ArrayCell: CellComponent<string[] | null> = ({ cell }) => {
-  const value = cell.getValue();
-
+export const ArrayCell: CellComponent<string[] | null | undefined> = ({ value }) => {
   if (!value || !Array.isArray(value)) {
     return <Typography>No items</Typography>;
   }
@@ -104,11 +67,4 @@ export const ArrayCell: CellComponent<string[] | null> = ({ cell }) => {
       </AccordionDetails>
     </Accordion>
   );
-};
-
-export const arrayColumnDef: Partial<VideoTableColumnDefTyped<string[] | null>> = {
-  Cell: ArrayCell,
-  filterVariant: 'text',
-  renderColumnFilterModeMenuItems: renderArrayFilterModeMenuItems,
-  filterFn: 'arrayContains',
 };

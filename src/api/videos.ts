@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
+import type { PaginationState } from '@tanstack/react-table';
 
-import { PaginationState } from '@/components/VideosTable/types';
 import { baseKy } from '@/src/utils';
 import { ApiColumnFilter, ColumnSort, VideoRow } from '@/types/types';
 
