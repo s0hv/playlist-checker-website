@@ -17,13 +17,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
-    "baseUrl": ".",
     "paths": {
-      "@/components/*": ["src/components/*"],
-      "@/api/*": ["src/api/*"],
-      "@/db/*": ["src/db/*"],
-      "@/types/*": ["types/*"],
-      "@/src/*": ["src/*"]
+      "@/components/*": ["./src/components/*"],
+      "@/api/*": ["./src/api/*"],
+      "@/db/*": ["./src/db/*"],
+      "@/types/*": ["./types/*"],
+      "@/src/*": ["./src/*"]
     }
   },
   "include": [

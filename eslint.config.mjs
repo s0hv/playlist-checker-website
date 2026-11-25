@@ -1,5 +1,6 @@
 // @ts-check
 
+import { fixupConfigRules, fixupPluginRules } from '@eslint/compat';
 import eslint from '@eslint/js';
 import stylistic from '@stylistic/eslint-plugin';
 import pluginQuery from '@tanstack/eslint-plugin-query';
@@ -70,7 +71,9 @@ export default defineConfig(
       reportUnusedDisableDirectives: 'error',
     },
     plugins: {
-      react,
+      // eslint-plugin-react and eslint-plugin-import call context methods removed in ESLint 10.
+      // Drop the fixup wrappers once both plugins support ESLint 10.
+      react: fixupPluginRules(react),
     },
     languageOptions: {
       globals: {
@@ -96,8 +99,8 @@ export default defineConfig(
       },
     },
     extends: [
-      importPlugin.flatConfigs.recommended,
-      importPlugin.flatConfigs.typescript,
+      fixupConfigRules(importPlugin.flatConfigs.recommended),
+      fixupConfigRules(importPlugin.flatConfigs.typescript),
       pluginRouter.configs['flat/recommended'],
     ],
     rules: {
@@ -117,10 +120,6 @@ export default defineConfig(
         exports: 'always-multiline',
         functions: 'never',
       }],
-      '@stylistic/object-curly-spacing': ['error', 'always', {
-        arraysInObjects: false,
-        objectsInObjects: false,
-      }],
       '@stylistic/operator-linebreak': ['error', 'before', {
         overrides: {
           '=': 'after',
@@ -130,7 +129,6 @@ export default defineConfig(
         argsIgnorePattern: '^_',
         ignoreRestSiblings: true,
       }],
-      '@stylistic/function-paren-newline': ['error', 'consistent'],
       '@stylistic/arrow-parens': ['error', 'as-needed'],
       '@stylistic/quote-props': ['error', 'as-needed'],
       '@stylistic/member-delimiter-style': [
@@ -168,7 +166,7 @@ export default defineConfig(
       '@typescript-eslint/unbound-method': 'off',
 
       // React
-      'react/jsx-filename-extension': ['error', { extensions: ['.jsx', '.tsx']}],
+      'react/jsx-filename-extension': ['error', { extensions: ['.jsx', '.tsx'] }],
       'react/function-component-definition': 'off',
       'react/no-unstable-nested-components': ['error', { allowAsProps: true }],
       'import/order': [
@@ -196,7 +194,8 @@ export default defineConfig(
         devDependencies: [
           'eslint.config.mjs',
           'vite.config.ts',
-        ]}],
+        ],
+      }],
     },
   }
 );

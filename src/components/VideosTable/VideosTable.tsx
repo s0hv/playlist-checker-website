@@ -67,12 +67,13 @@ export const VideosTable = () => {
 
   const columns = useColumns();
 
-  const columnsMap = useMemo(() =>
-    columns.reduce<ColumnsMap>((prev, col) => ({
+  const columnsMap = useMemo(
+    () => columns.reduce<ColumnsMap>((prev, col) => ({
       ...prev,
       [col.accessorKey!]: col,
     }), {}),
-  [columns]);
+    [columns]
+  );
 
   const [columnFilters, setColumnFilters] = useState<ColumnFilter[]>([]);
   const [columnFilterFns, setColumnFilterFns] = useState<Partial<Record<ColumnName, FilterType>>>(() => mapValues(columnsMap, c => (c!.filterFn ?? getDefaultColumnFilterFn(c!)) as FilterType));

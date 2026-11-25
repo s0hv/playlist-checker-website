@@ -2,8 +2,8 @@ import { setCookie } from '@tanstack/react-start/server';
 
 import { getSession, insertSession } from '@/db/session';
 import { cookieNames, oauthCookieOptions } from '@/src/auth/cookie';
+import { throwAuthorizationError } from '@/src/errors';
 import type { Session, SessionWithToken } from '@/types/session';
-import { throwAuthorizationError } from 'src/errors';
 
 // Implementation based on lucia auth v3
 // https://lucia-auth.com/sessions/basic

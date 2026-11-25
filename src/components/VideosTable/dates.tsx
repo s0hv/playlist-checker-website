@@ -68,11 +68,12 @@ export const renderDateFilterModeMenuItems = (onSelectFilterMode: (filter: DateF
 export const DateCell: CellComponent<Date> = ({ cell }) => {
   const value = cell.getValue();
 
-  return useMemo(() =>
-    value
+  return useMemo(
+    () => value
       ? `${defaultDateFormat(value, '')} (${defaultDateDistanceToNow(value, '')})`
       : '',
-  [value]);
+    [value]
+  );
 };
 
 export const DateFilter: FC<FilterProps<Date>> = props => {

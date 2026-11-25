@@ -4,9 +4,9 @@ import type { RouteMethod } from '@tanstack/react-start';
 import { getCookie } from '@tanstack/react-start/server';
 import { type ZodObject, z } from 'zod';
 
-import { cookieNames } from 'src/auth/cookie';
-import { validateSessionToken } from 'src/auth/session';
-import { throwBadRequestError, throwForbiddenError } from 'src/errors';
+import { cookieNames } from '@/src/auth/cookie';
+import { validateSessionToken } from '@/src/auth/session';
+import { throwBadRequestError, throwForbiddenError } from '@/src/errors';
 
 export type ContextType<
   TBody extends ZodObject = never,
@@ -24,7 +24,8 @@ export const validateRequest = <
   {
     bodySchema,
     querySchema,
-  }: { bodySchema?: TBody, querySchema?: TQuery }) => {
+  }: { bodySchema?: TBody, querySchema?: TQuery }
+) => {
   return async (req: Request): Promise<ContextType<TBody, TQuery>> => {
     await checkAuth();
 

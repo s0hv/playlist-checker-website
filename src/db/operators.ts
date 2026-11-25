@@ -9,7 +9,7 @@ import type { Comparator } from '@/db/constants';
 
 export type PreProcessor = (value: string | string[] | number | number[]) => string | number | FragmentSqlToken;
 const noPreprocess: PreProcessor = value => value as string | number;
-const dateValueTransform: PreProcessor = value => sql.fragment`${value}::date`;
+const dateValueTransform: PreProcessor = value => sql.fragment`${value as string | number}::date`;
 const lowerCase: PreProcessor = value => (value as string).toLowerCase();
 
 export type ColumnPreProcessor = (col: IdentifierSqlToken) => IdentifierSqlToken | FragmentSqlToken;

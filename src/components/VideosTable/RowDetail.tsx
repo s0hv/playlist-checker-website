@@ -1,4 +1,4 @@
-import { type ReactEventHandler, FC, useCallback } from 'react';
+import { type ReactEventHandler, FC } from 'react';
 import { Box } from '@mui/material';
 import type { MRT_Row } from 'material-react-table';
 

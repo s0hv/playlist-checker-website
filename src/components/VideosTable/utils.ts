@@ -23,7 +23,8 @@ import {
   allColumnNames,
   ColumnName,
   columnToTableCol,
-  defaultHiddenCols, rowDetailCols,
+  defaultHiddenCols,
+  rowDetailCols,
   selectExcludedCols,
 } from './columnInfos';
 import { localStorageKeys } from './constants';

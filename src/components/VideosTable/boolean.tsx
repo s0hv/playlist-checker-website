@@ -69,7 +69,7 @@ export const BooleanFilter: FC<FilterProps<boolean | null | undefined>> = ({ col
       <IconButton onClick={openMenu}>
         {boolFilterIcons[filterFn]}
       </IconButton>
-      <Typography fontWeight={500} fontSize='0.875rem'>
+      <Typography sx={{ fontWeight: 500, fontSize: '0.875rem' }}>
         {boolFilterMessages[filterFn]}
       </Typography>
       <Menu
