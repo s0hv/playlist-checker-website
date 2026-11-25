@@ -13,7 +13,7 @@ import {
 import { type WhereItem, SelectStatement } from '@/types/api';
 import { ColumnSort, PlaylistName, VideoRow } from '@/types/types';
 
-import { pool, sql } from './index';
+import { getPool, sql } from './index';
 
 const doArrayComparison = (
   value: string | number | FragmentSqlToken | IdentifierSqlToken,
@@ -133,7 +133,7 @@ type OptionalParams = {
   limit?: number
   offset?: number
 };
-export const getFullVideos = (select: SelectStatement, { where, sort, limit, offset }: OptionalParams = {}): Promise<QueryResult<VideoRow>> => {
+export const getFullVideos = async (select: SelectStatement, { where, sort, limit, offset }: OptionalParams = {}): Promise<QueryResult<VideoRow>> => {
   limit = limit || 10;
   const selectedCols: Array<FragmentSqlToken | IdentifierSqlToken> = [];
   const orderBy: FragmentSqlToken[] = [];
@@ -187,7 +187,7 @@ export const getFullVideos = (select: SelectStatement, { where, sort, limit, off
 
   const joins = generateJoins(tables);
 
-  return pool.query(sql.type(VideoRow)`
+  return (await getPool()).query(sql.type(VideoRow)`
     SELECT ${sql.join(selectedCols, sql.fragment`, `)}
     FROM videos video
     ${joins}
@@ -198,13 +198,13 @@ export const getFullVideos = (select: SelectStatement, { where, sort, limit, off
 };
 
 
-export const getVideoCount = (where?: WhereItem[]): Promise<number> => {
+export const getVideoCount = async (where?: WhereItem[]): Promise<number> => {
   const [whereClause, tables] = generateWhere(where ?? []);
   const joins = generateJoins(tables);
 
-  return pool.oneFirst(sql.typeAlias('count')`SELECT COUNT(*) as count FROM videos video ${joins} ${whereClause}`);
+  return (await getPool()).oneFirst(sql.typeAlias('count')`SELECT COUNT(*) as count FROM videos video ${joins} ${whereClause}`);
 };
 
-export const getPlaylists = (): Promise<readonly PlaylistName[]> => {
-  return pool.many(sql.type(PlaylistName)`SELECT "name", id FROM playlists`);
+export const getPlaylists = async (): Promise<readonly PlaylistName[]> => {
+  return (await getPool()).many(sql.type(PlaylistName)`SELECT "name", id FROM playlists`);
 };

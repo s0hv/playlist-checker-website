@@ -1,5 +1,6 @@
 import { QueryResultRow } from 'pg';
 import {
+  type DatabasePool,
   createPool,
   createSqlTag,
   Interceptor,
@@ -51,10 +52,25 @@ const interceptors = [
   createResultParserInterceptor(),
 ];
 
-export const pool = await createPool(process.env.DATABASE_URL, {
-  interceptors,
-});
-console.log('DATABASE CREATED');
+let poolPromise: Promise<DatabasePool> | undefined;
+
+/**
+ * Creates the pool on first use, so the server can start before the database is reachable.
+ * A failed creation is retried by the next call.
+ */
+export const getPool = (): Promise<DatabasePool> => {
+  poolPromise ??= createPool(process.env.DATABASE_URL!, { interceptors })
+    .then(pool => {
+      console.log('DATABASE CREATED');
+      return pool;
+    })
+    .catch((error: unknown) => {
+      poolPromise = undefined;
+      throw error;
+    });
+
+  return poolPromise;
+};
 
 export const sql = createSqlTag({
   typeAliases: {

@@ -1,240 +1,191 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Paper } from '@mui/material';
-import { useQuery } from '@tanstack/react-query';
-import type {
-  ColumnFilter,
-  ColumnOrderState,
-  OnChangeFn,
-  SortingState,
-  VisibilityState,
-} from '@tanstack/table-core';
-import { mapValues } from 'es-toolkit';
 import {
-  getDefaultColumnFilterFn,
-  MaterialReactTable,
-  MRT_TableState,
-  useMaterialReactTable,
-} from 'material-react-table';
-
-import { VideoSort, videosQueryOptions, VideoWhere } from '@/api/videos';
+  LinearProgress,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  Typography,
+} from '@mui/material';
 import {
-  buildWhereStatement,
-  changeHandler,
-  colsToSelectQuery,
-  getInitialColumnOrder,
-  getInitialColumnVisibility,
-  mapSortingState,
-  saveColumnOrder,
-  saveColumnVisibility,
-} from '@/components/VideosTable/utils';
-import { VideoRow } from '@/types/types';
-
-import { arrayFilterLocalization, arrayFilterMethods } from './array';
+  type DragEndEvent,
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import {
-  ColumnName,
-  columnToTableCol,
-  defaultColumnSizing,
-  defaultSorting,
-} from './columnInfos';
-import { dateFilterLocalization, dateFilterMethods } from './dates';
-import { renderDetailRow } from './RowDetail';
-import { ColumnsMap, FilterType, PaginationState } from './types';
-import { useColumns } from './useColumns';
+  arrayMove,
+  horizontalListSortingStrategy,
+  SortableContext,
+} from '@dnd-kit/sortable';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useTable } from '@tanstack/react-table';
 
+import { videosQueryOptions } from '@/api/videos';
 
-const noRows: VideoRow[] = [];
-const localization = {
-  ...dateFilterLocalization,
-  ...arrayFilterLocalization,
-};
+import { videoColumns } from './columns';
+import { noRows } from './constants';
+import { videoTableFeatures } from './features';
+import { BodyRow } from './table/BodyRow';
+import { FilterCell } from './table/FilterCell';
+import { HeaderCell } from './table/HeaderCell';
+import { Toolbar } from './table/Toolbar';
+import { type Density, useVideosTableState } from './useVideosTableState';
 
-const filterFns = {
-  ...dateFilterMethods,
-  ...arrayFilterMethods,
-};
+const rowsPerPageOptions = [10, 25, 50, 100];
 
-const initialState: Partial<MRT_TableState<VideoRow>> = {
-  showColumnFilters: true,
-  density: 'comfortable',
-  columnSizing: defaultColumnSizing,
+// Width of the expand button cell, which sits outside the column model
+const expandCellWidth = 56;
+
+const densityCellPadding: Record<Density, number> = {
+  compact: 0.5,
+  comfortable: 1,
+  spacious: 2,
 };
 
 export const VideosTable = () => {
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
+  const {
+    query,
+    filters,
+    setColumnFilter,
+    tableState,
+    tableHandlers,
+    resetColumnLayout,
+    density,
+    setDensity,
+    isFullScreen,
+    setIsFullScreen,
+  } = useVideosTableState();
+
+  const { data, isFetching } = useQuery({
+    ...videosQueryOptions(query, tableState.pagination),
+    placeholderData: keepPreviousData,
   });
 
-  const columns = useColumns();
-
-  const columnsMap = useMemo(
-    () => columns.reduce<ColumnsMap>((prev, col) => ({
-      ...prev,
-      [col.accessorKey!]: col,
-    }), {}),
-    [columns]
+  const table = useTable(
+    {
+      features: videoTableFeatures,
+      columns: videoColumns,
+      data: data?.rows ?? noRows,
+      rowCount: data?.count ?? 0,
+      getRowId: row => String(row.id),
+      getRowCanExpand: () => true,
+      columnResizeMode: 'onChange',
+      defaultColumn: { minSize: 80 },
+      state: tableState,
+      ...tableHandlers,
+      // Paging and sorting are done by the API
+      manualPagination: true,
+      manualSorting: true,
+    },
+    state => state
   );
 
-  const [columnFilters, setColumnFilters] = useState<ColumnFilter[]>([]);
-  const [columnFilterFns, setColumnFilterFns] = useState<Partial<Record<ColumnName, FilterType>>>(() => mapValues(columnsMap, c => (c!.filterFn ?? getDefaultColumnFilterFn(c!)) as FilterType));
-  const columnFiltersRef = useRef(columnFilters);
-  const columnFilterFnsRef = useRef(columnFilterFns);
-  const [sorting, setSorting] = useState<SortingState>(defaultSorting);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [columnOrder, setColumnOrder] = useState<ColumnOrderState>([]);
+  const sensors = useSensors(
+    useSensor(MouseSensor, {}),
+    useSensor(TouchSensor, {}),
+    useSensor(KeyboardSensor, {})
+  );
 
-  const [localStorageLoaded, setLocalStorageLoaded] = useState({
-    hiddenCols: false,
-    columnOrder: false,
-  });
-  const localStorageFullyLoaded = localStorageLoaded.hiddenCols && localStorageLoaded.columnOrder;
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
 
-  const [select, setSelect] = useState(() => colsToSelectQuery(Object.keys(columnToTableCol) as ColumnName[], new Set()));
-  const [where, setWhere] = useState<VideoWhere>([]);
-  const [sort, setSort] = useState<VideoSort>(() => mapSortingState(sorting));
+    const order = table.getAllLeafColumns().map(column => column.id);
+    table.setColumnOrder(arrayMove(order, order.indexOf(String(active.id)), order.indexOf(String(over.id))));
+  };
 
-  const {
-    data,
-    isLoading,
-  } = useQuery({
-    ...videosQueryOptions({ select, where, sort }, pagination),
-    enabled: localStorageFullyLoaded,
-  });
-
-  const onColumnFilterFnsChange = useMemo<OnChangeFn<Partial<Record<ColumnName, FilterType>>>>(() => changeHandler(
-    // This returns a callback function
-    // eslint-disable-next-line react-hooks/refs
-    (filterFns: Partial<Record<ColumnName, FilterType>>) => {
-      columnFilterFnsRef.current = filterFns;
-      setWhere(buildWhereStatement(columnsMap, columnFiltersRef.current, filterFns));
-    },
-    setColumnFilterFns
-  ), [columnsMap]);
-
-  const onColumnFiltersChange = useMemo<OnChangeFn<ColumnFilter[]>>(() => changeHandler(
-    // This returns a callback function
-    // eslint-disable-next-line react-hooks/refs
-    (filters: ColumnFilter[]) => {
-      columnFiltersRef.current = filters;
-      setWhere(buildWhereStatement(columnsMap, filters, columnFilterFnsRef.current));
-    },
-    setColumnFilters
-  ), [columnsMap]);
-
-  // False positive
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
-  const onColumnSortingChange = useMemo<OnChangeFn<SortingState>>(() => changeHandler(
-    (sorting: SortingState) => setSort(mapSortingState(sorting)),
-    setSorting
-  ), []);
-
-  // False positive
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
-  const onColumnVisibilityChange = useMemo<OnChangeFn<VisibilityState>>(() => changeHandler(
-    (visibility: VisibilityState) => {
-      const hiddenCols = Object.entries(visibility)
-        .filter(([_, visible]) => !visible)
-        .map(([col]) => col) as ColumnName[];
-
-      setSelect(colsToSelectQuery(Object.keys(columnToTableCol) as ColumnName[], new Set(hiddenCols)));
-    },
-    setColumnVisibility
-  ), []);
-
-  useLayoutEffect(() => {
-    onColumnVisibilityChange(getInitialColumnVisibility());
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLocalStorageLoaded(old => ({
-      ...old,
-      hiddenCols: true,
-    }));
-  }, [onColumnVisibilityChange]);
-
-  useLayoutEffect(() => {
-    const savedOrder = getInitialColumnOrder();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLocalStorageLoaded(old => ({
-      ...old,
-      columnOrder: true,
-    }));
-    if (!savedOrder) return;
-
-    setColumnOrder(savedOrder);
-  }, []);
-
-  // Save state to local storage on change
-  useEffect(() => {
-    if (!localStorageFullyLoaded) return;
-
-    saveColumnVisibility(columnVisibility);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [columnVisibility]);
-
-  useEffect(() => {
-    if (!localStorageFullyLoaded) return;
-
-    saveColumnOrder(columnOrder);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [columnOrder]);
-
-  const table = useMaterialReactTable({
-    columns: columns,
-    data: data?.rows ?? noRows,
-    rowCount: data?.count ?? 0,
-
-    // Table options
-    columnResizeMode: 'onChange',
-    layoutMode: 'grid-no-grow',
-    localization,
-    filterFns,
-
-    // Stage
-    state: {
-      isLoading,
-      pagination,
-      columnFilters,
-      columnFilterFns,
-      sorting,
-      columnVisibility,
-      columnOrder,
-    },
-    initialState,
-
-    // Change handlers
-    onPaginationChange: setPagination,
-    onColumnFiltersChange: onColumnFiltersChange,
-    onColumnFilterFnsChange: onColumnFilterFnsChange,
-    onSortingChange: onColumnSortingChange,
-
-    // Prevent table from resetting saved options during the first render
-    ...(localStorageFullyLoaded
-      ? {
-        onColumnVisibilityChange: onColumnVisibilityChange,
-        onColumnOrderChange: setColumnOrder,
-      }
-      : undefined),
-
-
-    // Custom rendering
-    renderDetailPanel: renderDetailRow,
-
-    // Features
-    enableColumnFilterModes: true,
-    enableColumnDragging: true,
-    enableColumnOrdering: true,
-    enableColumnResizing: true,
-    enableSorting: true,
-    enableGlobalFilter: false,
-    enableColumnActions: false,
-    // Server side data is used, so we handle filtering, pagination, and sorting manually
-    manualFiltering: true,
-    manualPagination: true,
-    manualSorting: true,
-  });
+  const headers = table.getHeaderGroups()[0].headers;
+  const visibleColumnIds = headers.map(header => header.column.id);
+  const rows = table.getRowModel().rows;
 
   return (
-    <Paper>
-      <MaterialReactTable table={table} />
+    <Paper
+      sx={isFullScreen
+        ? { position: 'fixed', inset: 0, zIndex: 'modal', overflow: 'auto', borderRadius: 0 }
+        : undefined}
+    >
+      <Toolbar
+        table={table}
+        density={density}
+        setDensity={setDensity}
+        isFullScreen={isFullScreen}
+        setIsFullScreen={setIsFullScreen}
+        resetColumnLayout={resetColumnLayout}
+      />
+      <LinearProgress sx={{ visibility: isFetching ? 'visible' : 'hidden' }} />
+      <DndContext
+        collisionDetection={closestCenter}
+        modifiers={[restrictToHorizontalAxis]}
+        onDragEnd={handleDragEnd}
+        sensors={sensors}
+      >
+        <TableContainer>
+          <Table
+            size={density === 'compact' ? 'small' : 'medium'}
+            sx={{
+              tableLayout: 'fixed',
+              width: table.getTotalSize() + expandCellWidth,
+              '& .MuiTableCell-root': { py: densityCellPadding[density] },
+            }}
+          >
+            <TableHead>
+              <SortableContext items={visibleColumnIds} strategy={horizontalListSortingStrategy}>
+                <TableRow>
+                  <TableCell sx={{ width: expandCellWidth }} />
+                  {headers.map(header => <HeaderCell key={header.id} header={header} />)}
+                </TableRow>
+                <TableRow>
+                  <TableCell />
+                  {headers.map(header => (
+                    <FilterCell
+                      key={header.id}
+                      header={header}
+                      filters={filters}
+                      setColumnFilter={setColumnFilter}
+                    />
+                  ))}
+                </TableRow>
+              </SortableContext>
+            </TableHead>
+            <TableBody>
+              <SortableContext items={visibleColumnIds} strategy={horizontalListSortingStrategy}>
+                {rows.map(row => <BodyRow key={row.id} row={row} />)}
+              </SortableContext>
+              {rows.length === 0 && !isFetching && (
+                <TableRow>
+                  <TableCell colSpan={headers.length + 1}>
+                    <Typography sx={{ color: 'text.secondary', textAlign: 'center' }}>
+                      No videos found
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </DndContext>
+      <TablePagination
+        component='div'
+        count={data?.count ?? 0}
+        page={tableState.pagination.pageIndex}
+        rowsPerPage={tableState.pagination.pageSize}
+        rowsPerPageOptions={rowsPerPageOptions}
+        showFirstButton
+        showLastButton
+        onPageChange={(_, page) => table.setPageIndex(page)}
+        onRowsPerPageChange={event => {
+          table.setPageSize(Number(event.target.value));
+          table.setPageIndex(0);
+        }}
+      />
     </Paper>
   );
 };

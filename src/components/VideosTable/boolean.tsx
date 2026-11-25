@@ -1,86 +1,61 @@
-import {
-  type FC,
-  type MouseEvent,
-  type ReactNode,
-  useCallback,
-  useState,
-} from 'react';
+import { type ReactNode, useState } from 'react';
 import Check from '@mui/icons-material/Check';
 import Close from '@mui/icons-material/Close';
 import Search from '@mui/icons-material/Search';
 import { Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import Checkbox from '@mui/material/Checkbox';
 
-import {
-  type BooleanFilterOption,
-  type FilterProps,
-  type VideoTableColumnDefTyped,
-  CellComponent,
-} from './types';
+import type { CellComponent, FilterComponent } from './types';
 
-export const boolFilters = ['noFilter', 'true', 'false'] as const;
+type BooleanFilterOption = 'noFilter' | 'true' | 'false';
 
-export const boolFilterMessages: Record<BooleanFilterOption, string> = {
+const boolFilterOptions: BooleanFilterOption[] = ['noFilter', 'true', 'false'];
+
+const boolFilterMessages: Record<BooleanFilterOption, string> = {
   noFilter: 'No filter',
   true: 'True',
   false: 'False',
 };
-export const boolFilterIcons: Record<BooleanFilterOption, ReactNode> = {
+const boolFilterIcons: Record<BooleanFilterOption, ReactNode> = {
   true: <Check />,
   false: <Close />,
   noFilter: <Search />,
 };
 
+export const BooleanCell: CellComponent<boolean | null | undefined> = ({ value }) => (
+  <Checkbox
+    checked={Boolean(value)}
+    disabled={true}
+  />
+);
 
-export const BooleanCell: CellComponent<boolean | null | undefined> = ({ cell }) => {
-  const value = cell.getValue<boolean | null | undefined>();
-
-  return (
-    <Checkbox
-      checked={Boolean(value)}
-      disabled={true}
-    />
-  );
-};
-
-export const BooleanFilter: FC<FilterProps<boolean | null | undefined>> = ({ column, table }) => {
-  const [filterFn, setFilterFn] = useState<BooleanFilterOption>('noFilter');
+export const BooleanFilter: FilterComponent = ({ value, onChange }) => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const selected: BooleanFilterOption = typeof value === 'boolean' ? `${value}` : 'noFilter';
 
-  const openMenu = useCallback((event: MouseEvent<HTMLButtonElement>) => setAnchorEl(event.currentTarget), []);
-  const closeMenu = useCallback(() => setAnchorEl(null), []);
-
-  const handleFilterFnChange = useCallback((filter: BooleanFilterOption) => {
-    closeMenu();
-    setFilterFn(filter);
-
-    // Set the filter value so it is included in the where statement.
-    // This only needs to be done once, but it's easier to just do it reactively here
-    column.setFilterValue('true');
-
-    table.setColumnFilterFns(prev => ({
-      ...prev,
-      [column.id]: filter,
-    }));
-  }, [column, table, closeMenu]);
+  const select = (option: BooleanFilterOption) => {
+    setAnchorEl(null);
+    onChange(option === 'noFilter' ? undefined : { mode: 'is', value: option === 'true' });
+  };
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-      <IconButton onClick={openMenu}>
-        {boolFilterIcons[filterFn]}
+      <IconButton aria-label='Change boolean filter' onClick={event => setAnchorEl(event.currentTarget)}>
+        {boolFilterIcons[selected]}
       </IconButton>
       <Typography sx={{ fontWeight: 500, fontSize: '0.875rem' }}>
-        {boolFilterMessages[filterFn]}
+        {boolFilterMessages[selected]}
       </Typography>
       <Menu
         anchorEl={anchorEl}
         open={anchorEl !== null}
-        onClose={closeMenu}
+        onClose={() => setAnchorEl(null)}
       >
-        {boolFilters.map(filt => (
+        {boolFilterOptions.map(option => (
           <MenuItem
-            key={filt}
-            onClick={() => handleFilterFnChange(filt)}
+            key={option}
+            selected={option === selected}
+            onClick={() => select(option)}
             sx={{
               gap: 1,
               '& svg': {
@@ -89,19 +64,11 @@ export const BooleanFilter: FC<FilterProps<boolean | null | undefined>> = ({ col
               },
             }}
           >
-            {boolFilterIcons[filt]}
-            {boolFilterMessages[filt]}
+            {boolFilterIcons[option]}
+            {boolFilterMessages[option]}
           </MenuItem>
         ))}
       </Menu>
     </Box>
   );
-};
-
-export const booleanColumnDef: Partial<VideoTableColumnDefTyped<boolean | null | undefined>> = {
-  Cell: BooleanCell,
-  filterFn: 'noFilter',
-  columnFilterModeOptions: Array.from(boolFilters),
-  enableColumnActions: false,
-  Filter: props => <BooleanFilter {...props} />,
 };
