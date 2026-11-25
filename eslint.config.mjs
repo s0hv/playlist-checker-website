@@ -195,10 +195,19 @@ export default defineConfig(
           'eslint.config.mjs',
           'vite.config.ts',
           'vitest.config.ts',
+          'playwright.config.ts',
           '**/*.test.ts',
           '**/*.test.tsx',
+          'e2e/**',
         ],
       }],
+    },
+  },
+  {
+    files: ['e2e/**'],
+    rules: {
+      // Playwright fixtures receive a `use` callback that is not a React hook
+      'react-hooks/rules-of-hooks': 'off',
     },
   }
 );

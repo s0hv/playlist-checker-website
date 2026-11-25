@@ -35,7 +35,7 @@ test.describe('videos table', () => {
     const contains = await videosPage.nextRequest(() => titleFilter.fill('50%'));
     expect(contains.where).toEqual([{ table: 'video', col: 'title', comp: 'ILIKE', value: String.raw`%50\%%` }]);
 
-    const startsWith = await videosPage.selectFilterMode('Title', 'Starts with');
+    const startsWith = await videosPage.nextRequest(() => videosPage.selectFilterMode('Title', 'Starts with'));
     expect(startsWith.where).toEqual([{ table: 'video', col: 'title', comp: 'ILIKE', value: String.raw`50\%%` }]);
     await expect(page.getByText('Filter mode: Starts with')).toBeVisible();
   });
@@ -43,20 +43,25 @@ test.describe('videos table', () => {
   test('filters empty values without typing anything', async ({ videosPage }) => {
     await videosPage.open();
 
-    const request = await videosPage.selectFilterMode('Filename', 'Empty');
+    const request = await videosPage.nextRequest(() => videosPage.selectFilterMode('Filename', 'Empty'));
 
     expect(request.where).toEqual([{ table: 'video', col: 'downloaded_filename', comp: 'empty', value: '' }]);
   });
 
   test('filters dates after the picked day', async ({ videosPage, page }) => {
     await videosPage.open();
+    // Without a date the filter does not change the query yet
     await videosPage.selectFilterMode('Published at', 'After date');
 
     const cell = await videosPage.filterCell('Published at');
-    await cell.getByRole('group').click();
-    const request = await videosPage.nextRequest(() => page.keyboard.type('11252026'));
+    await cell.getByRole('button', { name: 'Choose date' }).click();
+    // The calendar opens on the current month
+    const now = new Date();
+    const expectedDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-15`;
 
-    expect(request.where).toEqual([{ table: 'video', col: 'published_at', comp: 'after', value: '2026-11-25' }]);
+    const request = await videosPage.nextRequest(() => page.getByRole('gridcell', { name: '15', exact: true }).click());
+
+    expect(request.where).toEqual([{ table: 'video', col: 'published_at', comp: 'after', value: expectedDay }]);
   });
 
   test('filters booleans', async ({ videosPage, page }) => {
@@ -112,10 +117,18 @@ test.describe('videos table', () => {
     expect(defaultOrder.slice(0, 3)).toEqual(['ID', 'Video ID', 'Title']);
 
     const handle = videosPage.header('Title').getByRole('button', { name: 'Reorder column' });
+    const start = await handle.boundingBox();
+    const dragged = await videosPage.header('Title').boundingBox();
     const target = await videosPage.header('ID').boundingBox();
-    await handle.hover();
+    const startX = start!.x + start!.width / 2;
+    const y = start!.y + start!.height / 2;
+    // The drop position is decided by the center of the dragged cell, not by the pointer
+    const shift = (target!.x + target!.width / 2) - (dragged!.x + dragged!.width / 2);
+    await page.mouse.move(startX, y);
     await page.mouse.down();
-    await page.mouse.move(target!.x + 10, target!.y + target!.height / 2, { steps: 10 });
+    // dnd-kit starts the drag on the first pointer move
+    await page.mouse.move(startX - 5, y, { steps: 2 });
+    await page.mouse.move(startX + shift, y, { steps: 10 });
     await page.mouse.up();
 
     await expect.poll(() => videosPage.headerNames()).toEqual(['Title', 'ID', 'Video ID', ...defaultOrder.slice(3)]);

@@ -1,6 +1,5 @@
 import { type ReactEventHandler, FC } from 'react';
 import { Box } from '@mui/material';
-import type { MRT_Row } from 'material-react-table';
 
 import { toCdnUrl } from '@/src/utils';
 import { type VideoRow } from '@/types/types';
@@ -99,8 +98,4 @@ export const RowDetail: FC<RowDetailProps> = ({ row }: RowDetailProps) => (
     <br />
     {row.description}
   </Box>
-);
-
-export const renderDetailRow = ({ row }: { row: MRT_Row<VideoRow> }) => (
-  <RowDetail row={row.original} />
 );

@@ -90,11 +90,10 @@ export class VideosPage {
     return this.page.locator('thead tr').nth(1).locator('th').nth(index + 1);
   }
 
-  async selectFilterMode(column: string, mode: string): Promise<VideosRequest> {
+  async selectFilterMode(column: string, mode: string): Promise<void> {
     const cell = await this.filterCell(column);
     await cell.getByRole('button', { name: 'Change filter mode' }).click();
-
-    return this.nextRequest(() => this.page.getByRole('menuitem', { name: mode, exact: true }).click());
+    await this.page.getByRole('menuitem', { name: mode, exact: true }).click();
   }
 
   async toggleColumn(name: string): Promise<VideosRequest> {

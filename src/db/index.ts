@@ -59,7 +59,7 @@ let poolPromise: Promise<DatabasePool> | undefined;
  * A failed creation is retried by the next call.
  */
 export const getPool = (): Promise<DatabasePool> => {
-  poolPromise ??= createPool(process.env.DATABASE_URL!, { interceptors })
+  poolPromise ??= createPool(process.env.DATABASE_URL!, { interceptors, idleTimeout: 60_000 })
     .then(pool => {
       console.log('DATABASE CREATED');
       return pool;
