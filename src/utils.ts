@@ -37,15 +37,15 @@ export const filterOperations = {
   equals: '=',
   notEquals: '<>',
   greaterThan: '>',
-  greaterThanOrEqual: '>=',
+  greaterThanOrEqualTo: '>=',
   lessThan: '<',
-  lessThanOrEqual: '<=',
+  lessThanOrEqualTo: '<=',
   true: 'true',
   false: 'false',
   noFilter: null,
   at: 'at',
   before: 'before',
-  after: 'before',
+  after: 'after',
   arrayEqual: 'array=',
   arrayContains: 'arrayLike',
   arrayStartswith: 'arrayLike',
@@ -57,22 +57,23 @@ export const filterOperations = {
 } as const satisfies Partial<Record<FilterType, string | null>>;
 export type FilterOperation = keyof typeof filterOperations;
 
-export const escapePercentage = (s: string): string => s.replace(/%/g, '%');
+// Backslash is the default escape character of Postgres LIKE patterns
+export const escapeLikePattern = (s: string): string => s.replace(/[\\%_]/g, '\\$&');
 
 const noTransformation = <T>(s: T) => s;
 const noValueTransform = (_: unknown) => '';
 
 export const filterValueTransformations: Record<FilterOperation, (s: string) => string> = {
-  contains: (s: string) => `%${escapePercentage(s)}%`,
-  notContains: (s: string) => `%${escapePercentage(s)}%`,
-  startsWith: (s: string) => `%${escapePercentage(s)}`,
-  endsWith: (s: string) => `${escapePercentage(s)}%`,
+  contains: (s: string) => `%${escapeLikePattern(s)}%`,
+  notContains: (s: string) => `%${escapeLikePattern(s)}%`,
+  startsWith: (s: string) => `${escapeLikePattern(s)}%`,
+  endsWith: (s: string) => `%${escapeLikePattern(s)}`,
   equals: noTransformation,
   notEquals: noTransformation,
   greaterThan: noTransformation,
-  greaterThanOrEqual: noTransformation,
+  greaterThanOrEqualTo: noTransformation,
   lessThan: noTransformation,
-  lessThanOrEqual: noTransformation,
+  lessThanOrEqualTo: noTransformation,
   true: noValueTransform,
   false: noValueTransform,
   noFilter: noValueTransform,
@@ -80,8 +81,8 @@ export const filterValueTransformations: Record<FilterOperation, (s: string) => 
   before: noTransformation,
   after: noTransformation,
   arrayEqual: noTransformation,
-  arrayContains: (s: string) => `%${escapePercentage(s)}%`,
-  arrayStartswith: (s: string) => `${escapePercentage(s)}%`,
+  arrayContains: (s: string) => `%${escapeLikePattern(s)}%`,
+  arrayStartswith: (s: string) => `${escapeLikePattern(s)}%`,
   arrayAny: noTransformation,
   between: noTransformation,
   betweenInclusive: noTransformation,

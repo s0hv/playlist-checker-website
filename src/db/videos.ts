@@ -101,13 +101,18 @@ const generateWhere = (where: WhereItem[]): [FragmentSqlToken, Set<Table>] => {
 
     // Arrays have their own special processing
     const isArrayComp = compString.startsWith('array');
+    const value = preProcessValue[compString](filter.value);
+
     if (isArrayComp && arrayAggregated[filter.table as ArrayAggregatedKey]?.has(filter.col as never)) {
       whereClause.push(
-        doArrayComparison(preProcessValue[compString](filter.value), filter.table, filter.col, comp)
+        doArrayComparison(value, filter.table, filter.col, comp)
       );
+    } else if (isArrayComp) {
+      // Array comparators match against each element of a real array column
+      whereClause.push(sql.fragment`EXISTS (SELECT 1 FROM unnest(${col}) AS element WHERE element ${comp} ${value})`);
     } else {
       // Normal `col = value` type statement
-      whereClause.push(sql.fragment`${col} ${comp} ${preProcessValue[compString](filter.value)}`);
+      whereClause.push(sql.fragment`${col} ${comp} ${value}`);
     }
 
     tables.add(filter.table);
