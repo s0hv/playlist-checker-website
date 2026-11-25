@@ -66,7 +66,8 @@ const RootDocument = ({ children }: PropsWithChildren) => {
         <Providers>
           {children}
         </Providers>
-        <TanStackRouterDevtools position='bottom-right' />
+        {/* Bottom right would cover the table pagination controls */}
+        <TanStackRouterDevtools position='bottom-left' />
         <Scripts />
       </body>
     </html>
