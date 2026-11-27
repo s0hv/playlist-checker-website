@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { TextField } from '@mui/material';
-import { useDebouncedCallback } from '@tanstack/react-pacer/debouncer';
+import { useDebouncer } from '@tanstack/react-pacer/debouncer';
 
 import type { FilterComponent } from '../types';
 
@@ -14,7 +14,7 @@ const debounceMs = 400;
  */
 export const TextFilter: FilterComponent = ({ kind, mode, value, onChange }) => {
   const [text, setText] = useState(typeof value === 'string' ? value : '');
-  const debouncedOnChange = useDebouncedCallback(
+  const debouncer = useDebouncer(
     (selectedMode: FilterMode, newText: string) => onChange({ mode: selectedMode, value: newText }),
     { wait: debounceMs }
   );
@@ -29,7 +29,7 @@ export const TextFilter: FilterComponent = ({ kind, mode, value, onChange }) => 
       value={isValueless ? '' : text}
       onChange={event => {
         setText(event.target.value);
-        debouncedOnChange(mode, event.target.value);
+        debouncer.maybeExecute(mode, event.target.value);
       }}
       helperText={filterModeHelperText(mode)}
       fullWidth
@@ -39,7 +39,11 @@ export const TextFilter: FilterComponent = ({ kind, mode, value, onChange }) => 
             <FilterModeMenu
               kind={kind}
               mode={mode}
-              onSelect={selected => onChange({ mode: selected, value: text })}
+              onSelect={selected => {
+                // A pending change still carries the previous mode and would override the selected one
+                debouncer.cancel();
+                onChange({ mode: selected, value: text });
+              }}
             />
           ),
         },

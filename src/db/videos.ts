@@ -6,6 +6,7 @@ import {
 
 import { type Table, AscSort, DescSort, tableCols } from '@/db/constants';
 import {
+  type ColumnPreProcessor,
   comparatorMapping,
   preProcessColumn,
   preProcessValue,
@@ -19,17 +20,18 @@ const doArrayComparison = (
   value: string | number | FragmentSqlToken | IdentifierSqlToken,
   table: Table,
   col: string,
-  comp: FragmentSqlToken
+  comp: FragmentSqlToken,
+  columnPreProcessor: ColumnPreProcessor
 ): FragmentSqlToken => {
   let select: FragmentSqlToken;
 
   switch (table) {
     case 'tag':
-      select = sql.fragment`SELECT videotags.video_id FROM videotags INNER JOIN tags t ON t.id = videotags.tag_id WHERE ${sql.identifier(['t', col])} ${comp} ${value}`;
+      select = sql.fragment`SELECT videotags.video_id FROM videotags INNER JOIN tags t ON t.id = videotags.tag_id WHERE ${columnPreProcessor(sql.identifier(['t', col]))} ${comp} ${value}`;
       break;
 
     case 'playlist':
-      select = sql.fragment`SELECT playlistvideos.video_id FROM playlistvideos INNER JOIN playlists p ON p.id = playlistvideos.playlist_id WHERE ${sql.identifier(['p', col])} ${comp} ${value}`;
+      select = sql.fragment`SELECT playlistvideos.video_id FROM playlistvideos INNER JOIN playlists p ON p.id = playlistvideos.playlist_id WHERE ${columnPreProcessor(sql.identifier(['p', col]))} ${comp} ${value}`;
       break;
 
     default:
@@ -97,7 +99,8 @@ const generateWhere = (where: WhereItem[]): [FragmentSqlToken, Set<Table>] => {
     const compString = filter.comp;
 
     const comp = comparatorMapping[compString];
-    const col = preProcessColumn[compString](sql.identifier([filter.table, filter.col]));
+    const columnPreProcessor = preProcessColumn[compString];
+    const column = sql.identifier([filter.table, filter.col]);
 
     // Arrays have their own special processing
     const isArrayComp = compString.startsWith('array');
@@ -105,14 +108,14 @@ const generateWhere = (where: WhereItem[]): [FragmentSqlToken, Set<Table>] => {
 
     if (isArrayComp && arrayAggregated[filter.table as ArrayAggregatedKey]?.has(filter.col as never)) {
       whereClause.push(
-        doArrayComparison(value, filter.table, filter.col, comp)
+        doArrayComparison(value, filter.table, filter.col, comp, columnPreProcessor)
       );
     } else if (isArrayComp) {
       // Array comparators match against each element of a real array column
-      whereClause.push(sql.fragment`EXISTS (SELECT 1 FROM unnest(${col}) AS element WHERE element ${comp} ${value})`);
+      whereClause.push(sql.fragment`EXISTS (SELECT 1 FROM unnest(${column}) AS element WHERE ${columnPreProcessor(sql.identifier(['element']))} ${comp} ${value})`);
     } else {
       // Normal `col = value` type statement
-      whereClause.push(sql.fragment`${col} ${comp} ${value}`);
+      whereClause.push(sql.fragment`${columnPreProcessor(column)} ${comp} ${value}`);
     }
 
     tables.add(filter.table);

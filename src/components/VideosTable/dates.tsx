@@ -1,6 +1,7 @@
+import { useRef } from 'react';
 import { FormControl, FormHelperText } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers';
-import { useDebouncedCallback } from '@tanstack/react-pacer/debouncer';
+import { useDebouncer } from '@tanstack/react-pacer/debouncer';
 
 import { defaultDateDistanceToNow, defaultDateFormat } from '@/src/utils';
 
@@ -19,7 +20,8 @@ export const DateCell: CellComponent<Date | number | null | undefined> = ({ valu
 
 export const DateFilter: FilterComponent = ({ kind, mode, value, onChange }) => {
   const date = value instanceof Date ? value : null;
-  const debouncedOnChange = useDebouncedCallback(
+  const latestDate = useRef(date);
+  const debouncer = useDebouncer(
     (selectedMode: FilterMode, newDate: Date | null) => onChange({ mode: selectedMode, value: newDate ?? undefined }),
     { wait: debounceMs }
   );
@@ -31,7 +33,8 @@ export const DateFilter: FilterComponent = ({ kind, mode, value, onChange }) => 
         defaultValue={date}
         onChange={(newDate, { validationError }) => {
           if (validationError !== null) return;
-          debouncedOnChange(mode, newDate);
+          latestDate.current = newDate;
+          debouncer.maybeExecute(mode, newDate);
         }}
         slotProps={{
           field: { clearable: true },
@@ -41,7 +44,11 @@ export const DateFilter: FilterComponent = ({ kind, mode, value, onChange }) => 
               <FilterModeMenu
                 kind={kind}
                 mode={mode}
-                onSelect={selected => onChange({ mode: selected, value: date ?? undefined })}
+                onSelect={selected => {
+                  // A pending change still carries the previous mode and would override the selected one
+                  debouncer.cancel();
+                  onChange({ mode: selected, value: latestDate.current ?? undefined });
+                }}
               />
             ),
           },

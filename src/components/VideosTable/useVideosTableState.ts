@@ -35,6 +35,11 @@ export type Density = 'compact' | 'comfortable' | 'spacious';
 
 const firstPage = (pagination: PaginationState): PaginationState => ({ ...pagination, pageIndex: 0 });
 
+const isHidden = (column: string, visibility: ColumnVisibilityState) => visibility[column] === false;
+
+const withoutHiddenColumnFilters = (filters: FiltersState, visibility: ColumnVisibilityState): FiltersState =>
+  Object.fromEntries(Object.entries(filters).filter(([column]) => !isHidden(column, visibility)));
+
 /**
  * Must only be called on the client, because the initial column layout is read from localStorage.
  */
@@ -58,9 +63,28 @@ export const useVideosTableState = () => {
     setPagination(firstPage);
   };
 
+  // A hidden column has no header left to show or remove its filter and sort, so both are dropped with it
+  const applyColumnVisibility = (visibility: ColumnVisibilityState) => {
+    setColumnVisibility(visibility);
+
+    const hasHiddenFilter = Object.entries(filters)
+      .some(([column, filter]) => filter && isHidden(column, visibility));
+    const hasHiddenSort = sorting.some(({ id }) => isHidden(id, visibility));
+
+    if (hasHiddenFilter) {
+      setFilters(previous => withoutHiddenColumnFilters(previous, visibility));
+    }
+    if (hasHiddenSort) {
+      setSorting(previous => previous.filter(({ id }) => !isHidden(id, visibility)));
+    }
+    if (hasHiddenFilter || hasHiddenSort) {
+      setPagination(firstPage);
+    }
+  };
+
   const onColumnVisibilityChange: OnChangeFn<ColumnVisibilityState> = updater => {
     const next = functionalUpdate(updater, columnVisibility);
-    setColumnVisibility(next);
+    applyColumnVisibility(next);
     saveColumnVisibility(next);
   };
 
@@ -72,7 +96,7 @@ export const useVideosTableState = () => {
 
   const resetColumnLayout = () => {
     clearColumnLayout();
-    setColumnVisibility(loadColumnVisibility());
+    applyColumnVisibility(loadColumnVisibility());
     setColumnOrder(loadColumnOrder());
     setColumnSizing(defaultColumnSizing);
   };
