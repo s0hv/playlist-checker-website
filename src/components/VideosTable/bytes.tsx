@@ -8,7 +8,12 @@ import {
 } from '@mui/material';
 
 import { filterModeHelperText, FilterModeMenu } from './filters/FilterModeMenu';
-import { type ColumnFilterState, type FilterMode, rangeModes } from './filters/modes';
+import {
+  type ColumnFilterState,
+  type FilterMode,
+  type FilterValue,
+  rangeModes,
+} from './filters/modes';
 import type { CellComponent, FilterComponent } from './types';
 
 
@@ -38,6 +43,17 @@ export const sliderPositionToBytes = (position: number): number => {
   return Math.round(Math.pow(2, s + 10) * 10);
 };
 
+export const bytesToSliderPosition = (bytes: number): number => {
+  if (bytes <= 0) {
+    return sliderMin;
+  }
+
+  const s = Math.log2(bytes / 10) - 10;
+  const position = Math.round((s * 100) / 20);
+
+  return Math.min(sliderMax, Math.max(sliderMin, position));
+};
+
 export const BytesCell: CellComponent<number | null | undefined> = ({ value }) => (
   <Typography>{typeof value === 'number' ? bytesToString(value) : null}</Typography>
 );
@@ -58,14 +74,28 @@ const toRangeFilter = (mode: FilterMode, [min, max]: [number, number]): ColumnFi
     : { mode, value: [sliderPositionToBytes(min), sliderPositionToBytes(max)] }
 );
 
+// The starting position does not filter anything, so choosing a mode before moving the slider changes no results
 const toSingleFilter = (mode: FilterMode, position: number): ColumnFilterState => (
-  { mode, value: sliderPositionToBytes(position) }
+  position === sliderMin
+    ? { mode }
+    : { mode, value: sliderPositionToBytes(position) }
 );
 
-export const BytesFilter: FilterComponent = ({ kind, mode, onChange }) => {
+const initialRange = (value: FilterValue | undefined): [number, number] => {
+  if (!Array.isArray(value)) return [sliderMin, sliderMax];
+
+  const [min, max] = value as readonly number[];
+  return [bytesToSliderPosition(min), bytesToSliderPosition(max)];
+};
+
+const initialSingle = (value: FilterValue | undefined): number => (
+  typeof value === 'number' ? bytesToSliderPosition(value) : sliderMin
+);
+
+export const BytesFilter: FilterComponent = ({ kind, mode, value, onChange }) => {
   const isRange = rangeModes.has(mode);
-  const [range, setRange] = useState<[number, number]>([sliderMin, sliderMax]);
-  const [single, setSingle] = useState(sliderMin);
+  const [range, setRange] = useState<[number, number]>(() => initialRange(value));
+  const [single, setSingle] = useState(() => initialSingle(value));
 
   const selectMode = (selected: FilterMode) => onChange(rangeModes.has(selected)
     ? toRangeFilter(selected, range)

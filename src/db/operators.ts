@@ -15,6 +15,7 @@ const lowerCase: PreProcessor = value => (value as string).toLowerCase();
 export type ColumnPreProcessor = (col: IdentifierSqlToken) => IdentifierSqlToken | FragmentSqlToken;
 const noColumnPreProcess: ColumnPreProcessor = col => col;
 const dateColumnTransform: ColumnPreProcessor = col => sql.fragment`date_trunc('day', ${col})`;
+const lowerCaseColumn: ColumnPreProcessor = col => sql.fragment`lower(${col})`;
 
 export const preProcessValue: Record<Comparator, PreProcessor> = {
   '<': noPreprocess,
@@ -59,7 +60,8 @@ export const preProcessColumn: Record<Comparator, ColumnPreProcessor> = {
   at: dateColumnTransform,
   before: dateColumnTransform,
   after: dateColumnTransform,
-  'array=': noColumnPreProcess,
+  // Must stay consistent with preProcessValue, which lowercases the compared value
+  'array=': lowerCaseColumn,
   arrayLike: noColumnPreProcess,
   arrayAny: noColumnPreProcess,
   empty: col => sql.fragment`(${col} = '')`,
